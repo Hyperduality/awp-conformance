@@ -1,0 +1,82 @@
+[build-system]
+requires = ["hatchling>=1.25"]
+build-backend = "hatchling.build"
+
+[project]
+name = "awp-conformance"
+version = "0.1.0a1"
+description = "Conformance suite for the Agent World Protocol: tests any world or agent against the requirement matrix."
+readme = "README.md"
+license = "Apache-2.0"
+license-files = ["LICENSE"]
+requires-python = ">=3.11"
+authors = [{ name = "Hyperduality" }]
+classifiers = [
+  "Development Status :: 3 - Alpha",
+  "Intended Audience :: Developers",
+  "Programming Language :: Python :: 3",
+  "Programming Language :: Python :: 3 :: Only",
+  "Topic :: Software Development :: Testing",
+  "Typing :: Typed",
+]
+dependencies = [
+  "jsonschema>=4.23",
+  "websockets>=13.0",
+]
+
+[project.urls]
+Specification = "https://www.agentworldprotocol.com/conformance/test-suite"
+Source = "https://github.com/Hyperduality/awp-conformance"
+
+[project.scripts]
+awp-conformance = "awp_conformance.cli:main"
+
+[dependency-groups]
+dev = [
+  "awp-python",
+  "mypy>=1.13",
+  "pytest>=8.3",
+  "pytest-asyncio>=0.24",
+  "pyyaml>=6.0",
+  "ruff>=0.8",
+  "types-jsonschema",
+  "types-pyyaml",
+]
+
+[tool.uv.sources]
+awp-python = { git = "https://github.com/Hyperduality/awp-python", branch = "main" }
+
+[tool.hatch.build.targets.wheel]
+packages = ["src/awp_conformance"]
+
+[tool.hatch.build.targets.sdist]
+exclude = ["/spec", "/.github"]
+
+[tool.ruff]
+line-length = 100
+target-version = "py311"
+
+[tool.ruff.lint]
+select = ["E", "F", "W", "I", "UP", "B", "SIM", "RUF", "PT", "ASYNC", "C4", "PIE", "RET"]
+ignore = ["ASYNC109"]
+
+[tool.mypy]
+strict = true
+python_version = "3.11"
+files = ["src", "tests", "scripts"]
+
+[[tool.mypy.overrides]]
+module = ["tests.*"]
+disallow_untyped_defs = false
+disallow_incomplete_defs = false
+disallow_untyped_calls = false
+
+[[tool.mypy.overrides]]
+module = ["awp.*", "awp_sim.*"]
+follow_untyped_imports = true
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+asyncio_mode = "auto"
+asyncio_default_fixture_loop_scope = "function"
+addopts = "-ra --strict-markers"

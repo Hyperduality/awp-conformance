@@ -1,0 +1,106 @@
+{
+  "embodiment": "arm_01",
+  "subscribe": [
+    "proprio",
+    "arm_state"
+  ],
+  "moves": [
+    {
+      "type": "move_to_pose",
+      "params": {
+        "pose": {
+          "frame": "base",
+          "p_m": [
+            0.4,
+            0.4,
+            0.6
+          ],
+          "q": [
+            0,
+            0,
+            0,
+            1
+          ]
+        }
+      }
+    },
+    {
+      "type": "move_to_pose",
+      "params": {
+        "pose": {
+          "frame": "base",
+          "p_m": [
+            -0.4,
+            0.3,
+            0.2
+          ],
+          "q": [
+            0,
+            0,
+            0,
+            1
+          ]
+        }
+      }
+    },
+    {
+      "type": "move_to_pose",
+      "params": {
+        "pose": {
+          "frame": "base",
+          "p_m": [
+            0.0,
+            -0.45,
+            0.5
+          ],
+          "q": [
+            0,
+            0,
+            0,
+            1
+          ]
+        }
+      }
+    }
+  ],
+  "extended_min_ms": 1500,
+  "extended_min_ticks": 20,
+  "instant": {
+    "type": "stop",
+    "params": {}
+  },
+  "invalid": {
+    "type": "move_to_pose",
+    "params": {
+      "pose": {
+        "frame": "base"
+      }
+    }
+  },
+  "outside_envelope": {
+    "type": "move_to_pose",
+    "params": {
+      "pose": {
+        "frame": "base",
+        "p_m": [
+          0.9,
+          0.0,
+          0.4
+        ],
+        "q": [
+          0,
+          0,
+          0,
+          1
+        ]
+      }
+    }
+  },
+  "initial_state": "home",
+  "operator": {
+    "estop_engage": "kill -USR1 $AWP_SIM_PID",
+    "estop_release": "kill -USR2 $AWP_SIM_PID"
+  },
+  "audit_dir": "awp-audit",
+  "max_wait_s": 45
+}

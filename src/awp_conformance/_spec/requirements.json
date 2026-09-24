@@ -1,0 +1,2332 @@
+[
+ {
+  "id": "AWP-ACT-001",
+  "side": "both",
+  "applies": "all",
+  "gate": "core",
+  "test": "AWP-ACT-001",
+  "level": "MUST",
+  "page": "/spec/loop/actions",
+  "text": "`action_id` is client-generated and unique per session. A resubmission with the same `action_id` and identical `type`, `params`, `embodiment_id`,\u2026"
+ },
+ {
+  "id": "AWP-ACT-002",
+  "side": "world",
+  "applies": "all",
+  "gate": "core",
+  "test": "AWP-ACT-002",
+  "level": "MUST",
+  "page": "/spec/loop/actions",
+  "text": "Worlds MUST validate `params` against the type's `params_schema` and reject invalid submissions with `AWP_PARAMS_INVALID` before any execution\u2026"
+ },
+ {
+  "id": "AWP-ACT-003",
+  "side": "world",
+  "applies": "all",
+  "gate": "core",
+  "test": "AWP-ACT-003",
+  "level": "MUST",
+  "page": "/spec/loop/actions",
+  "text": "Submissions naming ungranted types or embodiments MUST be rejected with `AWP_FORBIDDEN`."
+ },
+ {
+  "id": "AWP-ACT-004",
+  "side": "world",
+  "applies": "all",
+  "gate": "core",
+  "test": "AWP-ACT-004",
+  "level": "MUST",
+  "page": "/spec/loop/actions",
+  "text": "`deadline_ms` is measured from the world's receipt of the submission and covers approval and queue waiting as well as execution. It is advisory in\u2026"
+ },
+ {
+  "id": "AWP-ACT-005",
+  "side": "world",
+  "applies": "all",
+  "gate": "core",
+  "test": "AWP-ACT-005",
+  "level": "MUST",
+  "page": "/spec/loop/actions",
+  "text": "The `preempt` field MUST be one of the policies the type declares (see preemption)."
+ },
+ {
+  "id": "AWP-ACT-006",
+  "side": "world",
+  "applies": "all",
+  "gate": "core",
+  "test": "AWP-ACT-006",
+  "level": "MUST",
+  "page": "/spec/loop/actions",
+  "text": "Worlds MUST retain the `action_id` and terminal state of every action for at least `reconnect_window_ms` after its terminal transition, and of\u2026"
+ },
+ {
+  "id": "AWP-ACT-007",
+  "side": "both",
+  "applies": "all",
+  "gate": "core",
+  "test": "AWP-ACT-007",
+  "level": "MUST",
+  "page": "/spec/loop/actions",
+  "text": "Basis and validity. `basis_ts_mono_ns` is the capture time of the newest observation the intent relies on, copied from that frame's `ts_mono_ns`;\u2026"
+ },
+ {
+  "id": "AWP-ACT-008",
+  "side": "world",
+  "applies": "streaming",
+  "gate": "feature:max_duration_ms declared",
+  "test": "AWP-ACT-008",
+  "level": "MAY",
+  "page": "/spec/loop/actions",
+  "text": "Maximum duration. An `extended` type MAY declare `max_duration_ms`. The world then applies an effective deadline of `min(deadline_ms,\u2026"
+ },
+ {
+  "id": "AWP-ACT-009",
+  "side": "world",
+  "applies": "all",
+  "gate": "core",
+  "test": "AWP-ACT-009",
+  "level": "MUST",
+  "page": "/spec/loop/actions",
+  "text": "Identical content. Two submissions are identical when each field listed in AWP-ACT-001 is absent from both or present in both with equal JSON\u2026"
+ },
+ {
+  "id": "AWP-ACT-010",
+  "side": "both",
+  "applies": "all",
+  "gate": "core",
+  "test": "AWP-ACT-010",
+  "level": "MUST",
+  "page": "/spec/loop/actions",
+  "text": "Submissions that fail admission. An `action.submit` answered with a JSON-RPC error creates no action: no `status_seq` is consumed, nothing is\u2026"
+ },
+ {
+  "id": "AWP-AGM-001",
+  "side": "world",
+  "applies": "all",
+  "gate": "core",
+  "test": "AWP-AGM-001",
+  "level": "MUST",
+  "page": "/spec/session/agent-manifest",
+  "text": "Worlds MUST NOT push modalities the agent did not declare in `consumes_modalities`."
+ },
+ {
+  "id": "AWP-AGM-002",
+  "side": "world",
+  "applies": "all",
+  "gate": "core",
+  "test": "AWP-AGM-002 (warning)",
+  "level": "SHOULD",
+  "page": "/spec/session/agent-manifest",
+  "text": "Agents SHOULD declare a realistic `max_obs_rate_hz`; worlds MAY downsample to honor it."
+ },
+ {
+  "id": "AWP-AGT-001",
+  "side": "agent",
+  "applies": "all",
+  "gate": "core",
+  "test": "AWP-AGT-001",
+  "level": "MUST",
+  "page": "/spec/profiles/core",
+  "text": "Negotiate the protocol version and tolerate unknown fields (AWP-VER-002..003)."
+ },
+ {
+  "id": "AWP-AGT-002",
+  "side": "agent",
+  "applies": "all",
+  "gate": "core",
+  "test": "AWP-AGT-002",
+  "level": "MUST",
+  "page": "/spec/profiles/core",
+  "text": "Parse the world manifest and refuse to open a session against a manifest it cannot validate against the canonical schema."
+ },
+ {
+  "id": "AWP-AGT-003",
+  "side": "agent",
+  "applies": "all",
+  "gate": "core",
+  "test": "AWP-AGT-003",
+  "level": "MUST",
+  "page": "/spec/profiles/core",
+  "text": "Submit only granted action types on granted embodiments and subscribe only to granted channels (AWP-PRM-001)."
+ },
+ {
+  "id": "AWP-AGT-004",
+  "side": "agent",
+  "applies": "all",
+  "gate": "core",
+  "test": "AWP-AGT-004",
+  "level": "MUST",
+  "page": "/spec/profiles/core",
+  "text": "Generate unique `action_id`s, resubmit only with identical content, and never reuse an admitted `action_id` (AWP-ACT-001, AWP-ACT-009, AWP-ACT-010)."
+ },
+ {
+  "id": "AWP-AGT-005",
+  "side": "agent",
+  "applies": "all",
+  "gate": "core",
+  "test": "AWP-AGT-005",
+  "level": "MUST",
+  "page": "/spec/profiles/core",
+  "text": "Handle every lifecycle state, including `pending_approval`, `queued`, `cancelling`, and `preempted`, and deduplicate redelivered statuses on\u2026"
+ },
+ {
+  "id": "AWP-AGT-006",
+  "side": "agent",
+  "applies": "all",
+  "gate": "core",
+  "test": "AWP-AGT-006",
+  "level": "MUST",
+  "page": "/spec/profiles/core",
+  "text": "Send heartbeats at the negotiated interval carrying `origin_ns`, answer the world's pings with `receive_ns` and `transmit_ns`, and in lockstep\u2026"
+ },
+ {
+  "id": "AWP-AGT-007",
+  "side": "agent",
+  "applies": "all",
+  "gate": "core",
+  "test": "AWP-AGT-007",
+  "level": "MUST",
+  "page": "/spec/profiles/core",
+  "text": "On `session.resume`, pass `last_status_seq` and treat the embodiment as being in safe state until a new action executes (AWP-CTL-008, AWP-SAF-008)."
+ },
+ {
+  "id": "AWP-AGT-008",
+  "side": "agent",
+  "applies": "all",
+  "gate": "core",
+  "test": "AWP-AGT-008",
+  "level": "MUST",
+  "page": "/spec/profiles/core",
+  "text": "Maintain the clock-offset estimate from heartbeat exchanges and express every agent-originated session-clock value through it (AWP-CLK-008,\u2026"
+ },
+ {
+  "id": "AWP-AGT-009",
+  "side": "agent",
+  "applies": "all",
+  "gate": "core",
+  "test": "AWP-AGT-009",
+  "level": "MUST",
+  "page": "/spec/profiles/core",
+  "text": "Expose `world.tick` as an explicit call and never advance time as a side effect of any other operation; an SDK helper that submits and ticks in\u2026"
+ },
+ {
+  "id": "AWP-APR-001",
+  "side": "world",
+  "applies": "all",
+  "gate": "feature:requires_approval",
+  "test": "AWP-APR-001",
+  "level": "MUST",
+  "page": "/spec/safety/approval",
+  "text": "Action types marked `requires_approval: true` enter the `pending_approval` state after validation and before `accepted`. The world emits\u2026"
+ },
+ {
+  "id": "AWP-APR-002",
+  "side": "world",
+  "applies": "all",
+  "gate": "feature:requires_approval",
+  "test": "AWP-APR-002",
+  "level": "MUST",
+  "page": "/spec/safety/approval",
+  "text": "The approver responds via `safety.approval.respond` (`approve` `deny`). Approve \u2192 `accepted` (or `queued` if the concurrency group is busy and the\u2026"
+ },
+ {
+  "id": "AWP-APR-003",
+  "side": "world",
+  "applies": "all",
+  "gate": "feature:requires_approval",
+  "test": "AWP-APR-003",
+  "level": "MUST",
+  "page": "/spec/safety/approval",
+  "text": "Approvals time out after `approval_timeout_ms` (safety policy; default 60000) \u2192 `rejected` with reason `approval_timeout`. If the submission's own\u2026"
+ },
+ {
+  "id": "AWP-APR-004",
+  "side": "world",
+  "applies": "all",
+  "gate": "feature:requires_approval",
+  "test": "AWP-APR-004",
+  "level": "MUST",
+  "page": "/spec/safety/approval",
+  "text": "Approvals are per-action; worlds MAY support scoped standing approvals (type + parameter predicate + expiry), which MUST appear in the audit log."
+ },
+ {
+  "id": "AWP-APR-005",
+  "side": "world",
+  "applies": "all",
+  "gate": "feature:requires_approval",
+  "test": "untestable: process or deployment policy",
+  "level": "MUST",
+  "page": "/spec/safety/approval",
+  "text": "Who may approve is deployment configuration, out of protocol scope; the protocol only defines the messages and states."
+ },
+ {
+  "id": "AWP-APR-006",
+  "side": "world",
+  "applies": "all",
+  "gate": "feature:requires_approval",
+  "test": "AWP-APR-006",
+  "level": "MUST",
+  "page": "/spec/safety/approval",
+  "text": "Approval request content is subject to the audit redaction rules (AWP-AUD-006): `params` fields and the task text listed in\u2026"
+ },
+ {
+  "id": "AWP-AUD-001",
+  "side": "world",
+  "applies": "all",
+  "gate": "core",
+  "test": "AWP-AUD-001",
+  "level": "MUST",
+  "page": "/spec/safety/audit-log",
+  "text": "Worlds MUST record, per session, an append-only log of: manifests, granted subset, every control-channel message (both directions, after\u2026"
+ },
+ {
+  "id": "AWP-AUD-002",
+  "side": "world",
+  "applies": "all",
+  "gate": "core",
+  "test": "AWP-AUD-002",
+  "level": "MUST",
+  "page": "/spec/safety/audit-log",
+  "text": "Records are JSON Lines; each record carries `ts_mono_ns`, `direction`, `kind`, and `body`."
+ },
+ {
+  "id": "AWP-AUD-003",
+  "side": "world",
+  "applies": "all",
+  "gate": "core",
+  "test": "AWP-AUD-003 (warning)",
+  "level": "SHOULD",
+  "page": "/spec/safety/audit-log",
+  "text": "Worlds SHOULD hash-chain records (`prev_hash`) for tamper evidence."
+ },
+ {
+  "id": "AWP-AUD-004",
+  "side": "world",
+  "applies": "all",
+  "gate": "core",
+  "test": "untestable: process or deployment policy",
+  "level": "MUST",
+  "page": "/spec/safety/audit-log",
+  "text": "Retention policy is deployment-defined; the format is normative so logs are portable across tools."
+ },
+ {
+  "id": "AWP-AUD-005",
+  "side": "world",
+  "applies": "all",
+  "gate": "capability:replay",
+  "test": "AWP-AUD-005 (replay bundle drives AWP-REP-003)",
+  "level": "MUST",
+  "page": "/spec/safety/audit-log",
+  "text": "Logs with full payloads plus a starting snapshot are sufficient for deterministic replay on worlds that advertise it."
+ },
+ {
+  "id": "AWP-AUD-006",
+  "side": "world",
+  "applies": "all",
+  "gate": "core",
+  "test": "AWP-AUD-006",
+  "level": "MUST",
+  "page": "/spec/safety/audit-log",
+  "text": "Before a control-channel message is written to the log, the world MUST replace the values of `session_token`, `transfer_token`, `snapshot_token`,\u2026"
+ },
+ {
+  "id": "AWP-AUD-007",
+  "side": "world",
+  "applies": "all",
+  "gate": "core",
+  "test": "AWP-AUD-007",
+  "level": "MUST",
+  "page": "/spec/safety/audit-log",
+  "text": "The same JSONL format serves three purposes with different completeness requirements. Tooling MUST label which class a file satisfies (`\"class\"`\u2026"
+ },
+ {
+  "id": "AWP-AV-001",
+  "side": "world",
+  "applies": "all",
+  "gate": "profile:realtime-av",
+  "test": "AWP-AV-001",
+  "level": "MUST",
+  "page": "/spec/profiles/realtime-av",
+  "text": "Media channels: the world MUST offer at least one `image/*` channel at \u2265 15 Hz or one continuous `audio/pcm` channel, and each MUST declare\u2026"
+ },
+ {
+  "id": "AWP-AV-002",
+  "side": "world",
+  "applies": "all",
+  "gate": "profile:realtime-av",
+  "test": "AWP-AV-002",
+  "level": "MUST",
+  "page": "/spec/profiles/realtime-av",
+  "text": "Every `session.telemetry` notification MUST carry a `channels` entry for every media channel that sent frames in its window \u2014 AWP-TIM-006."
+ },
+ {
+  "id": "AWP-CLK-001",
+  "side": "both",
+  "applies": "all",
+  "gate": "core",
+  "test": "AWP-CLK-001",
+  "level": "MUST",
+  "page": "/spec/semantics/timestamps-and-clocks",
+  "text": "All timestamps are `ts_mono_ns`: nanoseconds on the session monotonic clock, which starts \u22650 at session open and never goes backward."
+ },
+ {
+  "id": "AWP-CLK-002",
+  "side": "both",
+  "applies": "all",
+  "gate": "core",
+  "test": "AWP-CLK-002",
+  "level": "MUST",
+  "page": "/spec/semantics/timestamps-and-clocks",
+  "text": "`session.ready` carries a `clock_anchor`: the wall-clock time (RFC 3339, UTC) corresponding to monotonic 0, letting logs correlate across systems."
+ },
+ {
+  "id": "AWP-CLK-003",
+  "side": "both",
+  "applies": "all",
+  "gate": "core",
+  "test": "AWP-CLK-003",
+  "level": "MUST",
+  "page": "/spec/semantics/timestamps-and-clocks",
+  "text": "Simulated worlds additionally carry `ts_sim_ns` (i64) on frames when sim time diverges from the monotonic clock (fast-forward, slow-mo), and\u2026"
+ },
+ {
+  "id": "AWP-CLK-004",
+  "side": "both",
+  "applies": "all",
+  "gate": "core",
+  "test": "AWP-CLK-004",
+  "level": "MUST",
+  "page": "/spec/semantics/timestamps-and-clocks",
+  "text": "Timestamps mark capture time (observation frames), event time (statuses and events), and issue time (command frames), never send time; send time\u2026"
+ },
+ {
+  "id": "AWP-CLK-005",
+  "side": "both",
+  "applies": "all",
+  "gate": "core",
+  "test": "AWP-CLK-005",
+  "level": "MUST",
+  "page": "/spec/semantics/timestamps-and-clocks",
+  "text": "In JSON, all timestamp and counter fields are integers bounded by 2^53 \u2212 1 (AWP-CTL-009). Because the session clock starts at 0 this permits\u2026"
+ },
+ {
+  "id": "AWP-CLK-006",
+  "side": "agent",
+  "applies": "all",
+  "gate": "core",
+  "test": "AWP-CLK-006",
+  "level": "MUST",
+  "page": "/spec/semantics/timestamps-and-clocks",
+  "text": "Agent clock. The agent keeps its own monotonic nanosecond counter, the agent clock, starting \u22650 and bounded per AWP-CTL-009. It appears on the\u2026"
+ },
+ {
+  "id": "AWP-CLK-007",
+  "side": "both",
+  "applies": "all",
+  "gate": "core",
+  "test": "AWP-CLK-007",
+  "level": "MUST",
+  "page": "/spec/semantics/timestamps-and-clocks",
+  "text": "Exchange. `ping` carries `origin_ns`, the sender's clock at transmission; its result carries `origin_ns` echoed, `receive_ns`, the responder's\u2026"
+ },
+ {
+  "id": "AWP-CLK-008",
+  "side": "agent",
+  "applies": "streaming",
+  "gate": "core",
+  "test": "AWP-CLK-008",
+  "level": "MUST",
+  "page": "/spec/semantics/timestamps-and-clocks",
+  "text": "Estimate. On receipt of the result the initiator records `destination_ns`, its clock at receipt, and computes `rtt_ns = (destination_ns \u2212\u2026"
+ },
+ {
+  "id": "AWP-CLK-009",
+  "side": "agent",
+  "applies": "streaming",
+  "gate": "core",
+  "test": "AWP-CLK-009",
+  "level": "MUST",
+  "page": "/spec/semantics/timestamps-and-clocks",
+  "text": "Agent-originated session timestamps. Every session-clock value the agent places on the wire that originates on its own clock \u2014 `ts_mono_ns` on\u2026"
+ },
+ {
+  "id": "AWP-CMD-001",
+  "side": "world",
+  "applies": "streaming",
+  "gate": "capability:command_channels",
+  "test": "AWP-CMD-001",
+  "level": "MUST",
+  "page": "/spec/loop/command-channels",
+  "text": "Command channels are gated on the `command_channels` capability, declared in the manifest's top-level `command_channels` list using the standard\u2026"
+ },
+ {
+  "id": "AWP-CMD-002",
+  "side": "world",
+  "applies": "streaming",
+  "gate": "capability:command_channels",
+  "test": "AWP-CMD-002",
+  "level": "MUST",
+  "page": "/spec/loop/command-channels",
+  "text": "Every action schema naming a `command_channel` MUST declare `duration: \"streaming\"` and reference a declared command channel; a granted streaming\u2026"
+ },
+ {
+  "id": "AWP-CMD-003",
+  "side": "world",
+  "applies": "streaming",
+  "gate": "capability:command_channels",
+  "test": "AWP-CMD-003",
+  "level": "MUST",
+  "page": "/spec/loop/command-channels",
+  "text": "Frames are accepted on a command channel only while exactly one bound action is `executing`; worlds MUST discard frames received outside such a\u2026"
+ },
+ {
+  "id": "AWP-CMD-004",
+  "side": "world",
+  "applies": "streaming",
+  "gate": "capability:command_channels",
+  "test": "AWP-CMD-004",
+  "level": "MUST",
+  "page": "/spec/loop/command-channels",
+  "text": "A streaming action never completes on its own: it remains `executing` while the stream is live and reaches a terminal state only via\u2026"
+ },
+ {
+  "id": "AWP-CMD-005",
+  "side": "world",
+  "applies": "streaming",
+  "gate": "capability:command_channels",
+  "test": "AWP-CMD-005",
+  "level": "MUST",
+  "page": "/spec/loop/command-channels",
+  "text": "Streaming action types MUST declare `watchdog_ms`. If no valid frame arrives within `watchdog_ms` while the action is `executing`, the world MUST\u2026"
+ },
+ {
+  "id": "AWP-CMD-006",
+  "side": "world",
+  "applies": "streaming",
+  "gate": "capability:command_channels",
+  "test": "AWP-CMD-006",
+  "level": "MUST",
+  "page": "/spec/loop/command-channels",
+  "text": "Every inbound frame MUST be envelope-checked world-side before actuation (AWP-ENV-001): `clamp` executes at the limit; `reject` drops the frame.\u2026"
+ },
+ {
+  "id": "AWP-CMD-007",
+  "side": "world",
+  "applies": "streaming",
+  "gate": "capability:command_channels",
+  "test": "AWP-CMD-007",
+  "level": "MUST",
+  "page": "/spec/loop/command-channels",
+  "text": "Frames carry the standard frame envelope with per-channel monotonically increasing `seq` and `ts_mono_ns` as the setpoint's issue time on the\u2026"
+ },
+ {
+  "id": "AWP-CMD-008",
+  "side": "world",
+  "applies": "streaming",
+  "gate": "capability:command_channels",
+  "test": "AWP-CMD-008",
+  "level": "MUST",
+  "page": "/spec/loop/command-channels",
+  "text": "The audit log records inbound frames \u2014 payload or SHA-256 hash plus header \u2014 exactly as observation frames."
+ },
+ {
+  "id": "AWP-CNF-001",
+  "side": "world",
+  "applies": "all",
+  "gate": "core",
+  "test": "untestable: process or deployment policy",
+  "level": "MUST",
+  "page": "/spec/conformance",
+  "text": "Core World \u2014 implements every MUST in the Core profile on the world side."
+ },
+ {
+  "id": "AWP-CNF-002",
+  "side": "world",
+  "applies": "all",
+  "gate": "core",
+  "test": "untestable: process or deployment policy",
+  "level": "MUST",
+  "page": "/spec/conformance",
+  "text": "Core Agent \u2014 implements every MUST in the Core profile on the agent side."
+ },
+ {
+  "id": "AWP-CNF-003",
+  "side": "world",
+  "applies": "all",
+  "gate": "core",
+  "test": "untestable: process or deployment policy",
+  "level": "MUST",
+  "page": "/spec/conformance",
+  "text": "Profile conformance \u2014 a Core-conformant implementation additionally satisfying all MUSTs of a named profile. Claims are per-profile and name the\u2026"
+ },
+ {
+  "id": "AWP-CNF-004",
+  "side": "world",
+  "applies": "all",
+  "gate": "core",
+  "test": "untestable: process or deployment policy",
+  "level": "MUST",
+  "page": "/spec/conformance",
+  "text": "Every requirement ID has a row in the requirement matrix giving its side (world / agent / both), applicability (all / lockstep / streaming),\u2026"
+ },
+ {
+  "id": "AWP-CNF-005",
+  "side": "world",
+  "applies": "all",
+  "gate": "core",
+  "test": "untestable: process or deployment policy",
+  "level": "MUST",
+  "page": "/spec/conformance",
+  "text": "An implementation MAY claim \"AWP-conformant\" for a class only if a suite release targeting the named draft revision reports, for every requirement\u2026"
+ },
+ {
+  "id": "AWP-CNF-006",
+  "side": "world",
+  "applies": "all",
+  "gate": "profile:robotics",
+  "test": "untestable: process or deployment policy",
+  "level": "MUST",
+  "page": "/spec/conformance",
+  "text": "Profiles whose requirements depend on physical measurement \u2014 robotics in v0.1 \u2014 are experimental: no validated hardware harness exists, so their\u2026"
+ },
+ {
+  "id": "AWP-CTL-001",
+  "side": "both",
+  "applies": "all",
+  "gate": "core",
+  "test": "AWP-CTL-001",
+  "level": "MUST",
+  "page": "/spec/transport/control-channel",
+  "text": "The control channel carries JSON-RPC 2.0 objects. Requests originate from either side; notifications (no `id`) are used for status and event pushes."
+ },
+ {
+  "id": "AWP-CTL-002",
+  "side": "both",
+  "applies": "all",
+  "gate": "core",
+  "test": "AWP-CTL-002",
+  "level": "MUST",
+  "page": "/spec/transport/control-channel",
+  "text": "Method names are namespaced: `initialize`, `ping`, `world.*`, `session.*`, `task.*`, `obs.*`, `action.*`, `safety.*`. Unknown methods MUST return\u2026"
+ },
+ {
+  "id": "AWP-CTL-003",
+  "side": "both",
+  "applies": "all",
+  "gate": "core",
+  "test": "AWP-CTL-003",
+  "level": "MUST",
+  "page": "/spec/transport/control-channel",
+  "text": "Per-direction ordering on the control channel MUST be preserved by the binding; recipients MUST NOT assume cross-direction ordering, nor ordering\u2026"
+ },
+ {
+  "id": "AWP-CTL-004",
+  "side": "both",
+  "applies": "all",
+  "gate": "core",
+  "test": "AWP-CTL-004",
+  "level": "MUST",
+  "page": "/spec/transport/control-channel",
+  "text": "Heartbeats. `ping` is a JSON-RPC request either side may send, carrying `&#123; origin_ns &#125;`; its result is the pong, `&#123; origin_ns, receive_ns,\u2026"
+ },
+ {
+  "id": "AWP-CTL-005",
+  "side": "both",
+  "applies": "all",
+  "gate": "core",
+  "test": "AWP-CTL-005",
+  "level": "MUST",
+  "page": "/spec/transport/control-channel",
+  "text": "Reconnection. A lost control connection moves the session to `Suspended` and does not terminate it for `reconnect_window_ms` (declared in\u2026"
+ },
+ {
+  "id": "AWP-CTL-006",
+  "side": "both",
+  "applies": "all",
+  "gate": "core",
+  "test": "AWP-CTL-006",
+  "level": "MUST",
+  "page": "/spec/transport/control-channel",
+  "text": "Batch requests MUST NOT be used."
+ },
+ {
+  "id": "AWP-CTL-007",
+  "side": "both",
+  "applies": "all",
+  "gate": "core",
+  "test": "AWP-CTL-007",
+  "level": "MUST",
+  "page": "/spec/transport/control-channel",
+  "text": "One session per connection. A control connection carries exactly one control channel and at most one session. A second `session.open` on a\u2026"
+ },
+ {
+  "id": "AWP-CTL-008",
+  "side": "both",
+  "applies": "all",
+  "gate": "core",
+  "test": "AWP-CTL-008",
+  "level": "MUST",
+  "page": "/spec/transport/control-channel",
+  "text": "Every `action.status`, `world.event`, and `session.state` notification carries `status_seq`, a per-session integer that starts at 1 and increases\u2026"
+ },
+ {
+  "id": "AWP-CTL-009",
+  "side": "both",
+  "applies": "all",
+  "gate": "core",
+  "test": "AWP-CTL-009",
+  "level": "MUST",
+  "page": "/spec/transport/control-channel",
+  "text": "64-bit integers in JSON. `ts_mono_ns`, `ts_sim_ns`, `ts_send_ns`, `received_ts_mono_ns`, `basis_ts_mono_ns`, `valid_until_ns`, `origin_ns`,\u2026"
+ },
+ {
+  "id": "AWP-CTL-010",
+  "side": "world",
+  "applies": "all",
+  "gate": "core",
+  "test": "AWP-CTL-010",
+  "level": "MUST",
+  "page": "/spec/transport/control-channel",
+  "text": "Acknowledgement and retention. An agent acknowledges delivery by carrying `last_status_seq` in `session.resume` and, optionally, in its own `ping`\u2026"
+ },
+ {
+  "id": "AWP-DAT-001",
+  "side": "both",
+  "applies": "all",
+  "gate": "core",
+  "test": "AWP-DAT-001",
+  "level": "MUST",
+  "page": "/spec/transport/frames",
+  "text": "Frames MUST carry per-channel monotonically increasing `seq`; receivers detect loss by gaps."
+ },
+ {
+  "id": "AWP-DAT-002",
+  "side": "both",
+  "applies": "all",
+  "gate": "core",
+  "test": "manual: needs control of transport backpressure; attach the sender's drop policy and a stalled-receiver test",
+  "level": "MUST",
+  "page": "/spec/transport/frames",
+  "text": "Channels declare their class in the manifest as `loss_class` (AWP-TRN-006): `reliable` (no loss permitted) or `latest-wins` (droppable; senders\u2026"
+ },
+ {
+  "id": "AWP-DAT-003",
+  "side": "both",
+  "applies": "all",
+  "gate": "core",
+  "test": "AWP-DAT-003",
+  "level": "MUST",
+  "page": "/spec/transport/frames",
+  "text": "Senders MUST NOT exceed the negotiated per-channel rate; receivers MAY request a rate change via `obs.subscribe`."
+ },
+ {
+  "id": "AWP-DAT-004",
+  "side": "both",
+  "applies": "all",
+  "gate": "core",
+  "test": "AWP-DAT-004",
+  "level": "MUST",
+  "page": "/spec/transport/frames",
+  "text": "Inline binding. In the `inline` binding a frame is carried as the params of an `obs.frame` (world\u2192agent) or `cmd.frame` (agent\u2192world) notification\u2026"
+ },
+ {
+  "id": "AWP-DAT-005",
+  "side": "both",
+  "applies": "all",
+  "gate": "core",
+  "test": "AWP-DAT-005",
+  "level": "MUST",
+  "page": "/spec/transport/frames",
+  "text": "Reserved flag bits. Senders MUST set flags bits 4\u20137 to zero. Receivers MUST ignore bits 4\u20137 and MUST NOT reject a frame because of them."
+ },
+ {
+  "id": "AWP-DAT-006",
+  "side": "both",
+  "applies": "all",
+  "gate": "core",
+  "test": "AWP-DAT-006",
+  "level": "MUST",
+  "page": "/spec/transport/frames",
+  "text": "Extension block. Senders MUST set flags bit 2 if and only if an extension block is present, and MUST NOT emit two entries of the same type in one\u2026"
+ },
+ {
+  "id": "AWP-DAT-007",
+  "side": "both",
+  "applies": "all",
+  "gate": "core",
+  "test": "AWP-DAT-007",
+  "level": "MUST",
+  "page": "/spec/transport/frames",
+  "text": "Metadata placement. `tick`, `ts_sim_ns`, and `ts_send_ns` MUST be carried in the extension block (binary) or as the named JSON fields (inline).\u2026"
+ },
+ {
+  "id": "AWP-DAT-008",
+  "side": "both",
+  "applies": "all",
+  "gate": "core",
+  "test": "manual: run the implementation's decoder over schemas/test-vectors/frames.json and attach the result",
+  "level": "MUST",
+  "page": "/spec/transport/frames",
+  "text": "Test vectors. Implementations MUST decode every vector in `schemas/test-vectors/frames.json` to the listed fields, and reject the vectors marked\u2026"
+ },
+ {
+  "id": "AWP-DAT-009",
+  "side": "both",
+  "applies": "all",
+  "gate": "core",
+  "test": "AWP-DAT-009",
+  "level": "MUST",
+  "page": "/spec/transport/frames",
+  "text": "Resync. The `resync` flag (bit 3) marks the first frame a sender emits after a discontinuity it knows about \u2014 resumption (AWP-TRN-008), a keyframe\u2026"
+ },
+ {
+  "id": "AWP-EMB-001",
+  "side": "world",
+  "applies": "all",
+  "gate": "core",
+  "test": "AWP-EMB-001",
+  "level": "MUST",
+  "page": "/spec/session/embodiments",
+  "text": "Binding occurs at `session.open`; a non-shared embodiment already bound elsewhere yields `AWP_EMBODIMENT_UNAVAILABLE`."
+ },
+ {
+  "id": "AWP-EMB-002",
+  "side": "world",
+  "applies": "all",
+  "gate": "core",
+  "test": "AWP-EMB-002",
+  "level": "MUST",
+  "page": "/spec/session/embodiments",
+  "text": "On session close or reconnect-window expiry, the world MUST release the embodiment after it has entered its declared safe state\u2026"
+ },
+ {
+  "id": "AWP-EMB-003",
+  "side": "world",
+  "applies": "all",
+  "gate": "core",
+  "test": "AWP-EMB-003 (only if implemented)",
+  "level": "MAY",
+  "page": "/spec/session/embodiments",
+  "text": "Transfer. Worlds MAY support handoff: the receiving session calls `session.open` with `takeover: true` and a transfer token minted by the current\u2026"
+ },
+ {
+  "id": "AWP-EMB-004",
+  "side": "world",
+  "applies": "all",
+  "gate": "core",
+  "test": "AWP-EMB-004",
+  "level": "MUST",
+  "page": "/spec/session/embodiments",
+  "text": "Observer sessions. A session with no embodiment binds observation grants only; action submission returns `AWP_FORBIDDEN`."
+ },
+ {
+  "id": "AWP-EMB-005",
+  "side": "world",
+  "applies": "all",
+  "gate": "core",
+  "test": "AWP-EMB-005",
+  "level": "MUST",
+  "page": "/spec/session/embodiments",
+  "text": "Multiple embodiments per session are permitted when they share a `multi_bind_group` in the manifest; `session.open` then names them in\u2026"
+ },
+ {
+  "id": "AWP-ENV-001",
+  "side": "world",
+  "applies": "all",
+  "gate": "feature:envelopes declared",
+  "test": "AWP-ENV-001",
+  "level": "MUST",
+  "page": "/spec/safety/envelopes",
+  "text": "Enforcement is world-side and unconditional: no agent input may cause envelope violation."
+ },
+ {
+  "id": "AWP-ENV-002",
+  "side": "world",
+  "applies": "all",
+  "gate": "feature:envelopes declared",
+  "test": "AWP-ENV-002",
+  "level": "MUST",
+  "page": "/spec/safety/envelopes",
+  "text": "`on_violation` is `clamp` (execute at the limit, report `clamped: true` in status) or `reject` (`AWP_ENVELOPE_EXCEEDED`). Declared per envelope."
+ },
+ {
+  "id": "AWP-ENV-003",
+  "side": "world",
+  "applies": "all",
+  "gate": "feature:envelopes declared",
+  "test": "manual: requires physical disturbance and sensor evidence",
+  "level": "MUST",
+  "page": "/spec/safety/envelopes",
+  "text": "Violations of physical envelopes during execution (external disturbance) MUST fail the action (reason `envelope`) and emit `world.event:\u2026"
+ },
+ {
+  "id": "AWP-ENV-004",
+  "side": "world",
+  "applies": "all",
+  "gate": "feature:envelopes declared",
+  "test": "AWP-ENV-004",
+  "level": "MUST",
+  "page": "/spec/safety/envelopes",
+  "text": "Rate limiting applies to `action.submit` admission; excess returns `AWP_ENVELOPE_EXCEEDED` with `retryable: true` and `retry_after_ms`.\u2026"
+ },
+ {
+  "id": "AWP-ENV-005",
+  "side": "world",
+  "applies": "all",
+  "gate": "feature:envelopes declared",
+  "test": "AWP-ENV-005",
+  "level": "MUST",
+  "page": "/spec/safety/envelopes",
+  "text": "Each envelope declares `enforcement`: `command_check` (requested commands are clamped or rejected before actuation; the default), `measured`\u2026"
+ },
+ {
+  "id": "AWP-ERR-001",
+  "side": "agent",
+  "applies": "all",
+  "gate": "core",
+  "test": "AWP-ERR-001",
+  "level": "MUST",
+  "page": "/spec/loop/events-and-errors",
+  "text": "Every AWP error object (codes 1000\u20134999) marks `retryable: true false` in `data`. JSON-RPC reserved errors (\u221232768 to \u221232000, e.g. `-32601` for an\u2026"
+ },
+ {
+  "id": "AWP-EVT-001",
+  "side": "world",
+  "applies": "all",
+  "gate": "core",
+  "test": "AWP-EVT-001",
+  "level": "MUST",
+  "page": "/spec/loop/events-and-errors",
+  "text": "Worlds emit `world.event` notifications for state changes not tied to a specific action: `entity_appeared`, `entity_removed`, `collision`,\u2026"
+ },
+ {
+  "id": "AWP-EVT-002",
+  "side": "world",
+  "applies": "all",
+  "gate": "core",
+  "test": "AWP-EVT-002",
+  "level": "MUST",
+  "page": "/spec/loop/events-and-errors",
+  "text": "`e_stop_engaged` MUST terminate every non-terminal action: `executing` actions \u2192 `failed` (reason `e_stop`); `pending_approval`, `queued`, and\u2026"
+ },
+ {
+  "id": "AWP-EVT-003",
+  "side": "world",
+  "applies": "all",
+  "gate": "core",
+  "test": "AWP-EVT-003",
+  "level": "MUST",
+  "page": "/spec/loop/events-and-errors",
+  "text": "`world.event` notifications travel only on the control channel, where `status_seq` orders them against action statuses and resumption replays\u2026"
+ },
+ {
+  "id": "AWP-GUI-001",
+  "side": "world",
+  "applies": "all",
+  "gate": "profile:gui",
+  "test": "AWP-GUI-001",
+  "level": "MUST",
+  "page": "/spec/profiles/gui",
+  "text": "Channels: a GUI world MUST offer `screenshot` (`image/jpeg` or `image/raw`) and at least one of `dom` or `a11y_tree` (`text/event+json`) with\u2026"
+ },
+ {
+  "id": "AWP-GUI-002",
+  "side": "world",
+  "applies": "all",
+  "gate": "profile:gui",
+  "test": "AWP-GUI-002",
+  "level": "MUST",
+  "page": "/spec/profiles/gui",
+  "text": "Action types: a GUI world MUST offer `pointer_move`, `pointer_click`, `key_input`, `scroll`, and `navigate` with the normative param schemas\u2026"
+ },
+ {
+  "id": "AWP-GUI-003",
+  "side": "world",
+  "applies": "all",
+  "gate": "profile:gui",
+  "test": "AWP-GUI-003",
+  "level": "MUST",
+  "page": "/spec/profiles/gui",
+  "text": "Time model: streaming is REQUIRED; lockstep is OPTIONAL and, when offered, MUST follow the sim-profile lockstep rules (AWP-TIM-009..012) for\u2026"
+ },
+ {
+  "id": "AWP-GUI-004",
+  "side": "world",
+  "applies": "all",
+  "gate": "profile:gui",
+  "test": "AWP-GUI-004",
+  "level": "MUST",
+  "page": "/spec/profiles/gui",
+  "text": "Approval: `navigate` to a URL outside the manifest's declared allowlist and every action class that enters credentials MUST be declared\u2026"
+ },
+ {
+  "id": "AWP-GUI-005",
+  "side": "world",
+  "applies": "all",
+  "gate": "profile:gui",
+  "test": "AWP-GUI-005",
+  "level": "MUST",
+  "page": "/spec/profiles/gui",
+  "text": "Safe state: `safety_policy.safe_state.behavior` MUST be `hold` (no further input is injected) with `watchdog_ms` \u2264 10000."
+ },
+ {
+  "id": "AWP-LIF-001",
+  "side": "world",
+  "applies": "all",
+  "gate": "core",
+  "test": "AWP-LIF-001",
+  "level": "MUST",
+  "page": "/spec/loop/action-lifecycle",
+  "text": "Every transition MUST be one listed in the transition table. The world MUST send an `action.status` notification on every transition after\u2026"
+ },
+ {
+  "id": "AWP-LIF-002",
+  "side": "world",
+  "applies": "all",
+  "gate": "core",
+  "test": "AWP-LIF-002",
+  "level": "MUST",
+  "page": "/spec/loop/action-lifecycle",
+  "text": "Admission acknowledgement. The `action.submit` result MUST report the post-validation state \u2014 `pending_approval`, `queued`, or `accepted` \u2014\u2026"
+ },
+ {
+  "id": "AWP-LIF-003",
+  "side": "world",
+  "applies": "all",
+  "gate": "core",
+  "test": "AWP-LIF-003 (warning)",
+  "level": "SHOULD",
+  "page": "/spec/loop/action-lifecycle",
+  "text": "During `executing`, worlds SHOULD send progress updates (`progress` \u2208 [0,1]) for `duration: extended` types at \u22651 Hz in streaming mode and at\u2026"
+ },
+ {
+  "id": "AWP-LIF-004",
+  "side": "world",
+  "applies": "all",
+  "gate": "core",
+  "test": "AWP-LIF-004",
+  "level": "MUST",
+  "page": "/spec/loop/action-lifecycle",
+  "text": "`failed`, `rejected`, and `cancelled` statuses MUST carry a machine-readable `reason` from the status reason registry and MAY carry human-readable\u2026"
+ },
+ {
+  "id": "AWP-LIF-005",
+  "side": "world",
+  "applies": "all",
+  "gate": "core",
+  "test": "AWP-LIF-005",
+  "level": "MUST",
+  "page": "/spec/loop/action-lifecycle",
+  "text": "Cancellation. `action.cancel` on a pre-execution action transitions it directly to `cancelled` (reason `cancelled_by_agent`). On an `executing`\u2026"
+ },
+ {
+  "id": "AWP-LIF-006",
+  "side": "world",
+  "applies": "all",
+  "gate": "core",
+  "test": "AWP-LIF-006",
+  "level": "MUST",
+  "page": "/spec/loop/action-lifecycle",
+  "text": "Replay. `action.status` notifications after the agent's `last_status_seq` MUST be replayed on `session.resume` according to the delivery contract."
+ },
+ {
+  "id": "AWP-LIF-007",
+  "side": "world",
+  "applies": "all",
+  "gate": "core",
+  "test": "AWP-LIF-007",
+  "level": "MUST",
+  "page": "/spec/loop/action-lifecycle",
+  "text": "Streaming duration. `duration: streaming` actions (command channels) have no self-completion: they remain `executing` while their stream is live\u2026"
+ },
+ {
+  "id": "AWP-LIF-008",
+  "side": "world",
+  "applies": "all",
+  "gate": "core",
+  "test": "AWP-LIF-008",
+  "level": "MUST",
+  "page": "/spec/loop/action-lifecycle",
+  "text": "Precedence. Two terminating causes *coincide* when the second arises before the world has emitted the terminal status the first would produce \u2014\u2026"
+ },
+ {
+  "id": "AWP-LIF-009",
+  "side": "both",
+  "applies": "all",
+  "gate": "core",
+  "test": "AWP-LIF-009",
+  "level": "MUST",
+  "page": "/spec/loop/action-lifecycle",
+  "text": "Transition vs delivery. A transition happens once, in the world, at a single `ts_mono_ns`. Its `action.status` notification MAY be delivered more\u2026"
+ },
+ {
+  "id": "AWP-LIF-010",
+  "side": "world",
+  "applies": "all",
+  "gate": "core",
+  "test": "AWP-LIF-010",
+  "level": "MUST",
+  "page": "/spec/loop/action-lifecycle",
+  "text": "Abort bound. An action type MAY declare `max_abort_ms`; when it does, the world MUST report the terminal status of any `cancelling` action of that\u2026"
+ },
+ {
+  "id": "AWP-MA-001",
+  "side": "world",
+  "applies": "all",
+  "gate": "feature:multiple sessions",
+  "test": "AWP-MA-001 (only if implemented)",
+  "level": "MAY",
+  "page": "/spec/multi-agent",
+  "text": "A world MAY host any number of concurrent sessions. Each session's grants and envelopes are independent."
+ },
+ {
+  "id": "AWP-MA-002",
+  "side": "world",
+  "applies": "all",
+  "gate": "feature:multiple sessions",
+  "test": "AWP-MA-002 (warning)",
+  "level": "SHOULD",
+  "page": "/spec/multi-agent",
+  "text": "Other agents' embodiments appear as ordinary entities in observations; worlds SHOULD tag such entities `\"controlled_by\": \"session\"` (without\u2026"
+ },
+ {
+  "id": "AWP-MA-003",
+  "side": "world",
+  "applies": "all",
+  "gate": "feature:multiple sessions",
+  "test": "AWP-MA-003",
+  "level": "MUST",
+  "page": "/spec/multi-agent",
+  "text": "An embodiment is bound to at most one session unless the world declares `shared_control` for it, in which case the world MUST document its\u2026"
+ },
+ {
+  "id": "AWP-MA-004",
+  "side": "world",
+  "applies": "all",
+  "gate": "feature:multiple sessions",
+  "test": "AWP-MA-004",
+  "level": "MUST",
+  "page": "/spec/multi-agent",
+  "text": "Worlds MUST isolate sessions: one session's subscriptions or errors MUST NOT alter another session's granted behavior."
+ },
+ {
+  "id": "AWP-MA-005",
+  "side": "world",
+  "applies": "all",
+  "gate": "feature:multiple sessions",
+  "test": "AWP-MA-005",
+  "level": "MUST",
+  "page": "/spec/multi-agent",
+  "text": "Mutations that affect other sessions \u2014 `world.reset`, `world.restore`, and `world.tick` under `tick_authority: \"any_session\"` on a world that may\u2026"
+ },
+ {
+  "id": "AWP-MAN-001",
+  "side": "world",
+  "applies": "all",
+  "gate": "core",
+  "test": "AWP-MAN-001",
+  "level": "MUST",
+  "page": "/spec/session/world-manifest",
+  "text": "Every `channel` and `action_type` referenced by an embodiment MUST be defined in the top-level lists."
+ },
+ {
+  "id": "AWP-MAN-002",
+  "side": "world",
+  "applies": "all",
+  "gate": "core",
+  "test": "AWP-MAN-002 (schema: params_schema validates as JSON Schema 2020-12)",
+  "level": "MUST",
+  "page": "/spec/session/world-manifest",
+  "text": "`params_schema` values MUST be valid JSON Schema (2020-12)."
+ },
+ {
+  "id": "AWP-MAN-003",
+  "side": "world",
+  "applies": "all",
+  "gate": "core",
+  "test": "AWP-MAN-003",
+  "level": "MUST",
+  "page": "/spec/session/world-manifest",
+  "text": "Manifests MUST be stable for the life of the connection; changes require re-`initialize`."
+ },
+ {
+  "id": "AWP-MAN-004",
+  "side": "world",
+  "applies": "all",
+  "gate": "core",
+  "test": "AWP-MAN-004",
+  "level": "MUST",
+  "page": "/spec/session/world-manifest",
+  "text": "`capabilities` is an open map. v0.1 standard keys: `seed`, `snapshot`, `replay`, `command_channels`, `task`. Unknown keys MUST be ignored; vendor\u2026"
+ },
+ {
+  "id": "AWP-MAN-005",
+  "side": "world",
+  "applies": "all",
+  "gate": "core",
+  "test": "AWP-MAN-005",
+  "level": "MUST",
+  "page": "/spec/session/world-manifest",
+  "text": "Worlds declaring the `command_channels` capability additionally list `command_channels` \u2014 agent\u2192world channels, same schema as observation\u2026"
+ },
+ {
+  "id": "AWP-MAN-006",
+  "side": "world",
+  "applies": "all",
+  "gate": "core",
+  "test": "AWP-MAN-006 (schema conditional)",
+  "level": "MUST",
+  "page": "/spec/session/world-manifest",
+  "text": "Worlds offering `lockstep` MUST declare `tick_policy` (`on_tick`) and `tick_authority` (`any_session` `barrier`); worlds offering `streaming` MUST\u2026"
+ },
+ {
+  "id": "AWP-MAN-007",
+  "side": "world",
+  "applies": "all",
+  "gate": "core",
+  "test": "AWP-MAN-007",
+  "level": "MUST",
+  "page": "/spec/session/world-manifest",
+  "text": "Embodiments that may be bound together by one session share a `multi_bind_group`; `session.open` names them in `embodiments` and submissions then\u2026"
+ },
+ {
+  "id": "AWP-MOD-001",
+  "side": "world",
+  "applies": "all",
+  "gate": "core",
+  "test": "AWP-MOD-001",
+  "level": "MUST",
+  "page": "/spec/semantics/modalities",
+  "text": "Payloads MUST validate against the channel's declared modality and schema."
+ },
+ {
+  "id": "AWP-MOD-002",
+  "side": "both",
+  "applies": "all",
+  "gate": "core",
+  "test": "AWP-MOD-002",
+  "level": "MUST",
+  "page": "/spec/semantics/modalities",
+  "text": "Vendor modalities use `x-&lt;vendor>.&lt;name>`; agents ignore channels whose modality they did not declare."
+ },
+ {
+  "id": "AWP-MOD-003",
+  "side": "world",
+  "applies": "all",
+  "gate": "core",
+  "test": "untestable: process or deployment policy",
+  "level": "MUST",
+  "page": "/spec/semantics/modalities",
+  "text": "New standard modalities are added by RFD (MINOR version bump)."
+ },
+ {
+  "id": "AWP-NEG-001",
+  "side": "world",
+  "applies": "all",
+  "gate": "core",
+  "test": "AWP-NEG-001",
+  "level": "MUST",
+  "page": "/spec/session/negotiation",
+  "text": "The world resolves each request to a granted subset and MUST enumerate the outcome exactly in `session.ready` (granted channels with actual rates,\u2026"
+ },
+ {
+  "id": "AWP-NEG-002",
+  "side": "world",
+  "applies": "all",
+  "gate": "core",
+  "test": "AWP-NEG-002",
+  "level": "MUST",
+  "page": "/spec/session/negotiation",
+  "text": "The world MUST reject `session.open` (not silently downgrade) when the requested time model is unsupported or the embodiment is unavailable:\u2026"
+ },
+ {
+  "id": "AWP-NEG-003",
+  "side": "world",
+  "applies": "all",
+  "gate": "core",
+  "test": "AWP-NEG-003 (only if implemented)",
+  "level": "MAY",
+  "page": "/spec/session/negotiation",
+  "text": "Channel rates MAY be granted lower than requested; action types are granted whole or not at all."
+ },
+ {
+  "id": "AWP-NEG-004",
+  "side": "world",
+  "applies": "all",
+  "gate": "core",
+  "test": "AWP-NEG-004",
+  "level": "MUST",
+  "page": "/spec/session/negotiation",
+  "text": "Renegotiation: `obs.subscribe` adds or re-rates channels and `obs.unsubscribe` removes them mid-session; both return the session's complete\u2026"
+ },
+ {
+  "id": "AWP-OBS-001",
+  "side": "world",
+  "applies": "all",
+  "gate": "core",
+  "test": "AWP-OBS-001",
+  "level": "MUST",
+  "page": "/spec/loop/observations",
+  "text": "Every frame MUST carry: channel id, per-channel monotonically increasing `seq`, `ts_mono_ns` (session monotonic clock, time of capture), and a\u2026"
+ },
+ {
+  "id": "AWP-OBS-002",
+  "side": "world",
+  "applies": "all",
+  "gate": "core",
+  "test": "AWP-OBS-002",
+  "level": "MUST",
+  "page": "/spec/loop/observations",
+  "text": "In lockstep, per-tick channels additionally carry `tick` (u64) in the frame's extension block (type `0x01`) or as the `tick` field in the inline\u2026"
+ },
+ {
+  "id": "AWP-OBS-003",
+  "side": "both",
+  "applies": "all",
+  "gate": "core",
+  "test": "AWP-OBS-003",
+  "level": "MUST",
+  "page": "/spec/loop/observations",
+  "text": "Worlds MUST NOT reorder frames within a channel; agents MUST tolerate interleaving across channels."
+ },
+ {
+  "id": "AWP-OBS-004",
+  "side": "world",
+  "applies": "all",
+  "gate": "core",
+  "test": "AWP-OBS-004",
+  "level": "MUST",
+  "page": "/spec/loop/observations",
+  "text": "A world MAY mark a frame `keyframe` (self-contained) vs delta; every channel using deltas MUST emit a keyframe at subscription start and at least\u2026"
+ },
+ {
+  "id": "AWP-OBS-005",
+  "side": "world",
+  "applies": "all",
+  "gate": "core",
+  "test": "AWP-OBS-005",
+  "level": "MUST",
+  "page": "/spec/loop/observations",
+  "text": "On subscription, the first frame MUST be a current snapshot, not a historical replay."
+ },
+ {
+  "id": "AWP-OBS-006",
+  "side": "world",
+  "applies": "streaming",
+  "gate": "core (streaming)",
+  "test": "AWP-OBS-006",
+  "level": "MUST",
+  "page": "/spec/loop/observations",
+  "text": "Send time. In streaming sessions every observation frame MUST carry `ts_send_ns`, the session-clock time at which the world handed the frame to\u2026"
+ },
+ {
+  "id": "AWP-OBS-007",
+  "side": "agent",
+  "applies": "streaming",
+  "gate": "core (streaming)",
+  "test": "AWP-OBS-007 (warning)",
+  "level": "MUST",
+  "page": "/spec/loop/observations",
+  "text": "Receiver report. In streaming sessions the agent SHOULD send an `obs.report` notification (schema) at least every 5 s covering the preceding\u2026"
+ },
+ {
+  "id": "AWP-PRE-001",
+  "side": "world",
+  "applies": "all",
+  "gate": "core",
+  "test": "AWP-PRE-001",
+  "level": "MUST",
+  "page": "/spec/loop/preemption",
+  "text": "Each action type declares its preemption policy in the manifest; the submitter selects one of the declared options per submission."
+ },
+ {
+  "id": "AWP-PRE-002",
+  "side": "world",
+  "applies": "all",
+  "gate": "core",
+  "test": "AWP-PRE-002",
+  "level": "MUST",
+  "page": "/spec/loop/preemption",
+  "text": "`queue` New action enters the `queued` state and becomes `accepted` when the group frees, in submission order. Queue depth bounded by `max_queue`\u2026"
+ },
+ {
+  "id": "AWP-PRE-003",
+  "side": "world",
+  "applies": "all",
+  "gate": "core",
+  "test": "AWP-PRE-003",
+  "level": "MUST",
+  "page": "/spec/loop/preemption",
+  "text": "`replace` Current `executing` action \u2192 `preempted` (after safe transition); current pre-execution actions in the group \u2192 `cancelled` (reason\u2026"
+ },
+ {
+  "id": "AWP-PRE-004",
+  "side": "world",
+  "applies": "all",
+  "gate": "core",
+  "test": "AWP-PRE-004",
+  "level": "MUST",
+  "page": "/spec/loop/preemption",
+  "text": "`blend` World merges trajectories (continuous control); both actions report status, the replaced one ends `preempted` with `blended: true`."
+ },
+ {
+  "id": "AWP-PRE-005",
+  "side": "world",
+  "applies": "all",
+  "gate": "core",
+  "test": "AWP-PRE-005",
+  "level": "MUST",
+  "page": "/spec/loop/preemption",
+  "text": "`reject` New submission is rejected with `AWP_BUSY` while one is `executing` or pre-execution in the group."
+ },
+ {
+  "id": "AWP-PRE-006",
+  "side": "world",
+  "applies": "all",
+  "gate": "core",
+  "test": "AWP-PRE-006 (only if implemented)",
+  "level": "MAY",
+  "page": "/spec/loop/preemption",
+  "text": "Concurrency groups. Each action type MAY name a `concurrency_group` (string) in its schema. Types sharing a group name preempt one another; types\u2026"
+ },
+ {
+  "id": "AWP-PRE-007",
+  "side": "world",
+  "applies": "lockstep",
+  "gate": "core",
+  "test": "AWP-PRE-007",
+  "level": "MUST",
+  "page": "/spec/loop/preemption",
+  "text": "Replace in lockstep. A staged action does nothing before the next advance (AWP-TIM-010), so neither does its preemption. At admission, a `replace`\u2026"
+ },
+ {
+  "id": "AWP-PRM-001",
+  "side": "world",
+  "applies": "all",
+  "gate": "core",
+  "test": "AWP-PRM-001",
+  "level": "MUST",
+  "page": "/spec/safety/permissions",
+  "text": "Sessions operate default-deny: only explicitly granted action types, channels, embodiments, and administrative operations are usable; everything\u2026"
+ },
+ {
+  "id": "AWP-PRM-002",
+  "side": "world",
+  "applies": "all",
+  "gate": "core",
+  "test": "AWP-PRM-002",
+  "level": "MUST",
+  "page": "/spec/safety/permissions",
+  "text": "Grants are enumerated exactly in `session.ready` and are immutable for the session except channel subscriptions (negotiation)."
+ },
+ {
+  "id": "AWP-PRM-003",
+  "side": "world",
+  "applies": "all",
+  "gate": "core",
+  "test": "AWP-PRM-003 (only if implemented)",
+  "level": "MAY",
+  "page": "/spec/safety/permissions",
+  "text": "Grants MAY carry `expires_at` (monotonic ns); expired grants behave as never granted, and the world emits `world.event: grant_expired`."
+ },
+ {
+  "id": "AWP-PRM-004",
+  "side": "world",
+  "applies": "all",
+  "gate": "core",
+  "test": "AWP-PRM-004 (only if implemented)",
+  "level": "MAY",
+  "page": "/spec/safety/permissions",
+  "text": "Worlds MAY scope grants further per action type (e.g. `move_to_pose` limited to a named spatial region); such scopes appear in the granted schema."
+ },
+ {
+  "id": "AWP-PRM-005",
+  "side": "world",
+  "applies": "all",
+  "gate": "core",
+  "test": "AWP-PRM-005",
+  "level": "MUST",
+  "page": "/spec/safety/permissions",
+  "text": "Administrative operations are default-deny like everything else. A world that hosts a single session MAY grant `admin` operations by default; a\u2026"
+ },
+ {
+  "id": "AWP-PRM-006",
+  "side": "world",
+  "applies": "all",
+  "gate": "core",
+  "test": "AWP-PRM-006",
+  "level": "MUST",
+  "page": "/spec/safety/permissions",
+  "text": "`world.restore` and `world.reset` MUST: (1) emit `world.event: world_resetting` to every session, naming the initiating session id; (2) transition\u2026"
+ },
+ {
+  "id": "AWP-REP-001",
+  "side": "world",
+  "applies": "all",
+  "gate": "capability:seed",
+  "test": "AWP-REP-001 (two seeded runs compared)",
+  "level": "MUST",
+  "page": "/spec/reproducibility",
+  "text": "Seeding. If `seed` is advertised, `session.open` MAY carry `seed`; two sessions with equal seeds and identical action sequences MUST produce\u2026"
+ },
+ {
+  "id": "AWP-REP-002",
+  "side": "world",
+  "applies": "all",
+  "gate": "capability:snapshot",
+  "test": "AWP-REP-002",
+  "level": "MUST",
+  "page": "/spec/reproducibility",
+  "text": "Snapshot / restore. `world.snapshot` returns an opaque token; `world.restore` with that token MUST return the world to the exact captured state.\u2026"
+ },
+ {
+  "id": "AWP-REP-003",
+  "side": "world",
+  "applies": "all",
+  "gate": "capability:replay",
+  "test": "AWP-REP-003 (record, restore, replay, compare hashes and state sequences)",
+  "level": "MUST",
+  "page": "/spec/reproducibility",
+  "text": "Deterministic replay. If `replay` is advertised, feeding a recorded audit log's action sequence \u2014 `action.submit` and `action.cancel` messages,\u2026"
+ },
+ {
+  "id": "AWP-ROB-001",
+  "side": "world",
+  "applies": "streaming",
+  "gate": "profile:robotics",
+  "test": "AWP-ROB-001",
+  "level": "MUST",
+  "page": "/spec/profiles/robotics",
+  "text": "Command-side checking (`enforcement: command_check` or `both`) is REQUIRED for every envelope the world declares: spatial, velocity, force, and\u2026"
+ },
+ {
+  "id": "AWP-ROB-002",
+  "side": "world",
+  "applies": "streaming",
+  "gate": "profile:robotics",
+  "test": "manual: requires physical disturbance and sensor evidence",
+  "level": "MUST",
+  "page": "/spec/profiles/robotics",
+  "text": "Measured monitoring (`enforcement: measured` or `both`) is REQUIRED for `spatial` and `max_velocity_mps` \u2014 the world MUST observe executed motion\u2026"
+ },
+ {
+  "id": "AWP-ROB-003",
+  "side": "world",
+  "applies": "streaming",
+  "gate": "profile:robotics",
+  "test": "manual: review of claim wording",
+  "level": "MUST",
+  "page": "/spec/profiles/robotics",
+  "text": "Claim wording. A robotics-profile claim MUST enumerate which limits are enforced under `both` and which under `command_check` only. A world\u2026"
+ },
+ {
+  "id": "AWP-ROB-004",
+  "side": "world",
+  "applies": "streaming",
+  "gate": "profile:robotics",
+  "test": "manual: requires physical disturbance and sensor evidence",
+  "level": "MUST",
+  "page": "/spec/profiles/robotics",
+  "text": "Evidence. The conformance report MUST record, per declared limit: the sensor or estimator used for measured monitoring, its sampling rate, the\u2026"
+ },
+ {
+  "id": "AWP-ROB-005",
+  "side": "world",
+  "applies": "streaming",
+  "gate": "profile:robotics",
+  "test": "AWP-ROB-005",
+  "level": "MUST",
+  "page": "/spec/profiles/robotics",
+  "text": "A robotics-profile world MUST declare `safety_policy.max_basis_age_ms` \u2264 500 and MUST reject with `AWP_STALE_INTENT` every `action.submit` that\u2026"
+ },
+ {
+  "id": "AWP-ROB-006",
+  "side": "world",
+  "applies": "streaming",
+  "gate": "profile:robotics",
+  "test": "AWP-ROB-006",
+  "level": "MUST",
+  "page": "/spec/profiles/robotics",
+  "text": "A robotics-profile world MUST offer, for every `latest-wins` observation or command channel, at least one stream binding with independent flow\u2026"
+ },
+ {
+  "id": "AWP-ROB-007",
+  "side": "world",
+  "applies": "streaming",
+  "gate": "profile:robotics",
+  "test": "AWP-ROB-007",
+  "level": "MUST",
+  "page": "/spec/profiles/robotics",
+  "text": "Every `extended` action type a robotics-profile world declares MUST declare `max_duration_ms` (AWP-ACT-008), so that no extended motion outlives a\u2026"
+ },
+ {
+  "id": "AWP-SAF-001",
+  "side": "both",
+  "applies": "all",
+  "gate": "core",
+  "test": "AWP-SAF-001",
+  "level": "MUST",
+  "page": "/spec/safety/safe-state",
+  "text": "`session.ready` declares `heartbeat_interval_ms` (default 5000). Each side MUST send `ping` at least every `heartbeat_interval_ms` and MUST answer\u2026"
+ },
+ {
+  "id": "AWP-SAF-002",
+  "side": "both",
+  "applies": "all",
+  "gate": "core",
+  "test": "AWP-SAF-002",
+  "level": "MUST",
+  "page": "/spec/safety/safe-state",
+  "text": "A side MUST treat the control connection as lost after three consecutive intervals without a `pong` (or any other message) from the peer, and the\u2026"
+ },
+ {
+  "id": "AWP-SAF-003",
+  "side": "world",
+  "applies": "streaming",
+  "gate": "core (streaming)",
+  "test": "AWP-SAF-003",
+  "level": "MUST",
+  "page": "/spec/safety/safe-state",
+  "text": "Every world with a streaming time model MUST declare `safety_policy.safe_state` with `behavior` (`hold`, `safe_stop`, `park`, or a vendor value)\u2026"
+ },
+ {
+  "id": "AWP-SAF-004",
+  "side": "world",
+  "applies": "streaming",
+  "gate": "core (streaming)",
+  "test": "AWP-SAF-004",
+  "level": "MUST",
+  "page": "/spec/safety/safe-state",
+  "text": "When the watchdog expires, the world MUST, in order: (1) begin the declared `behavior` on every embodiment bound to the session; (2) transition\u2026"
+ },
+ {
+  "id": "AWP-SAF-005",
+  "side": "agent",
+  "applies": "streaming",
+  "gate": "core (streaming)",
+  "test": "AWP-SAF-005 (warning)",
+  "level": "SHOULD",
+  "page": "/spec/safety/safe-state",
+  "text": "Safe-state entry is independent of the heartbeat: a connection that answers the world's pings but originates no agent traffic still trips the\u2026"
+ },
+ {
+  "id": "AWP-SAF-006",
+  "side": "world",
+  "applies": "streaming",
+  "gate": "core (streaming)",
+  "test": "AWP-SAF-006",
+  "level": "MUST",
+  "page": "/spec/safety/safe-state",
+  "text": "Streaming command channels have their own, tighter, per-action watchdog (`watchdog_ms` on the action type, AWP-CMD-005). Both apply; the\u2026"
+ },
+ {
+  "id": "AWP-SAF-007",
+  "side": "world",
+  "applies": "streaming",
+  "gate": "core (streaming)",
+  "test": "AWP-SAF-007",
+  "level": "MUST",
+  "page": "/spec/safety/safe-state",
+  "text": "`reconnect_window_ms` governs only how long the world retains the session (token, grants, unacknowledged notifications, `action_id` history) after\u2026"
+ },
+ {
+  "id": "AWP-SAF-008",
+  "side": "world",
+  "applies": "streaming",
+  "gate": "core (streaming)",
+  "test": "AWP-SAF-008",
+  "level": "MUST",
+  "page": "/spec/safety/safe-state",
+  "text": "On `session.resume` the embodiment remains in its safe state. The world MUST NOT resume any action terminated by safe-state entry, and MUST NOT\u2026"
+ },
+ {
+  "id": "AWP-SAF-009",
+  "side": "world",
+  "applies": "streaming",
+  "gate": "feature:reliable channels declared",
+  "test": "AWP-SAF-009",
+  "level": "MUST",
+  "page": "/spec/safety/safe-state",
+  "text": "If the world cannot deliver frames on a `reliable` observation channel for longer than that channel's `stale_after_ms` (manifest, default 2 \u00d7 the\u2026"
+ },
+ {
+  "id": "AWP-SAF-010",
+  "side": "agent",
+  "applies": "streaming",
+  "gate": "core (streaming)",
+  "test": "AWP-SAF-010 (warning)",
+  "level": "SHOULD",
+  "page": "/spec/safety/safe-state",
+  "text": "Agents SHOULD NOT submit an action whose basis observation is stale \u2014 its staleness at the moment of use exceeding the channel's `stale_after_ms`\u2026"
+ },
+ {
+  "id": "AWP-SAF-011",
+  "side": "both",
+  "applies": "streaming",
+  "gate": "core (streaming)",
+  "test": "AWP-SAF-011 (deadline enforcement while the agent is alive but silent)",
+  "level": "SHOULD",
+  "page": "/spec/safety/safe-state",
+  "text": "Stalled inference. The protocol cannot observe a policy directly; it bounds how long motion continues without fresh intent. A streaming-duration\u2026"
+ },
+ {
+  "id": "AWP-SAF-012",
+  "side": "world",
+  "applies": "streaming",
+  "gate": "profile:robotics",
+  "test": "manual: measured watchdog reaction time attached to the report",
+  "level": "MUST",
+  "page": "/spec/safety/safe-state",
+  "text": "Adapters MUST verify their watchdog with a measured test: disconnect the agent abruptly during an `executing` extended action and record, on the\u2026"
+ },
+ {
+  "id": "AWP-SAF-013",
+  "side": "world",
+  "applies": "streaming",
+  "gate": "feature:max_basis_age_ms declared",
+  "test": "AWP-SAF-013",
+  "level": "MUST",
+  "page": "/spec/safety/safe-state",
+  "text": "Stale-intent enforcement. When the manifest declares `safety_policy.max_basis_age_ms`, the world MUST reject with `AWP_STALE_INTENT` any\u2026"
+ },
+ {
+  "id": "AWP-SCN-001",
+  "side": "world",
+  "applies": "all",
+  "gate": "feature:scene channel offered",
+  "test": "AWP-SCN-001",
+  "level": "MUST",
+  "page": "/spec/semantics/scene-graphs",
+  "text": "Entity `id`s MUST be stable for the life of an entity and never reused within a session."
+ },
+ {
+  "id": "AWP-SCN-002",
+  "side": "world",
+  "applies": "all",
+  "gate": "feature:scene channel offered",
+  "test": "AWP-SCN-002 (warning)",
+  "level": "SHOULD",
+  "page": "/spec/semantics/scene-graphs",
+  "text": "`affordances` values SHOULD correspond to granted action types where the mapping exists (e.g. `graspable` \u2194 `grasp`)."
+ },
+ {
+  "id": "AWP-SCN-003",
+  "side": "world",
+  "applies": "all",
+  "gate": "feature:scene channel offered",
+  "test": "AWP-SCN-003",
+  "level": "MUST",
+  "page": "/spec/semantics/scene-graphs",
+  "text": "Scene frames are full snapshots (keyframes) or deltas per observation rules."
+ },
+ {
+  "id": "AWP-SEC-001",
+  "side": "world",
+  "applies": "all",
+  "gate": "core",
+  "test": "AWP-SEC-001",
+  "level": "MUST",
+  "page": "/spec/transport/security",
+  "text": "Connections on loopback or stdio \u2014 the common deployment \u2014 MAY be plaintext; any connection that leaves the machine MUST use TLS (`wss://`, gRPC\u2026"
+ },
+ {
+  "id": "AWP-SEC-002",
+  "side": "world",
+  "applies": "all",
+  "gate": "core (non-loopback)",
+  "test": "AWP-SEC-002",
+  "level": "MUST",
+  "page": "/spec/transport/security",
+  "text": "Worlds MUST authenticate agents before `initialize` completes on any non-loopback connection; defined schemes: bearer token and mutual TLS. A\u2026"
+ },
+ {
+  "id": "AWP-SEC-003",
+  "side": "world",
+  "applies": "all",
+  "gate": "core (non-loopback)",
+  "test": "AWP-SEC-003",
+  "level": "MUST",
+  "page": "/spec/transport/security",
+  "text": "`session.ready` returns an unguessable session token used for `session.resume` and for binding stream connections to the session. Tokens MUST be\u2026"
+ },
+ {
+  "id": "AWP-SEC-004",
+  "side": "world",
+  "applies": "all",
+  "gate": "core (non-loopback)",
+  "test": "AWP-SEC-004",
+  "level": "MUST",
+  "page": "/spec/transport/security",
+  "text": "Stream endpoints MUST reject connections that do not present a valid session token, presented as defined in presenting credentials."
+ },
+ {
+  "id": "AWP-SEC-005",
+  "side": "both",
+  "applies": "all",
+  "gate": "core (non-loopback)",
+  "test": "AWP-SEC-005",
+  "level": "MUST",
+  "page": "/spec/transport/security",
+  "text": "A bearer credential \u2014 an agent credential on the control connection or the session token on a stream connection \u2014 is presented in the\u2026"
+ },
+ {
+  "id": "AWP-SEC-006",
+  "side": "world",
+  "applies": "all",
+  "gate": "core",
+  "test": "AWP-SEC-006",
+  "level": "MUST",
+  "page": "/spec/transport/security",
+  "text": "Credentials MUST NOT appear in URLs. `stream_endpoints` URLs MUST NOT carry a token, and worlds MUST reject a connection whose URL carries one,\u2026"
+ },
+ {
+  "id": "AWP-SES-001",
+  "side": "world",
+  "applies": "all",
+  "gate": "core",
+  "test": "AWP-SES-001",
+  "level": "MUST",
+  "page": "/spec/session/lifecycle",
+  "text": "Connecting `initialize` succeeds Negotiating"
+ },
+ {
+  "id": "AWP-SES-002",
+  "side": "world",
+  "applies": "all",
+  "gate": "core",
+  "test": "AWP-SES-002",
+  "level": "MUST",
+  "page": "/spec/session/lifecycle",
+  "text": "Negotiating `session.open` accepted Ready"
+ },
+ {
+  "id": "AWP-SES-003",
+  "side": "world",
+  "applies": "all",
+  "gate": "core",
+  "test": "AWP-SES-003",
+  "level": "MUST",
+  "page": "/spec/session/lifecycle",
+  "text": "Ready/Active control connection lost (AWP-SAF-002) Suspended; the watchdog (AWP-SAF-003) keeps running independently"
+ },
+ {
+  "id": "AWP-SES-004",
+  "side": "world",
+  "applies": "all",
+  "gate": "core",
+  "test": "AWP-SES-004",
+  "level": "MUST",
+  "page": "/spec/session/lifecycle",
+  "text": "Suspended `session.resume` with valid token and `last_status_seq` within window Active; statuses replayed (AWP-CTL-008); an embodiment in safe\u2026"
+ },
+ {
+  "id": "AWP-SES-005",
+  "side": "world",
+  "applies": "all",
+  "gate": "core",
+  "test": "AWP-SES-005",
+  "level": "MUST",
+  "page": "/spec/session/lifecycle",
+  "text": "Suspended window expires Closed; world MUST apply safe state if not already entered, then release embodiments (AWP-EMB-002)"
+ },
+ {
+  "id": "AWP-SES-006",
+  "side": "world",
+  "applies": "all",
+  "gate": "core",
+  "test": "AWP-SES-006",
+  "level": "MUST",
+  "page": "/spec/session/lifecycle",
+  "text": "any `session.close` Closed; pre-execution actions \u2192 `cancelled` (`session_closed`), `executing` actions \u2192 `cancelling` \u2192 `cancelled`\u2026"
+ },
+ {
+  "id": "AWP-SES-007",
+  "side": "world",
+  "applies": "all",
+  "gate": "core",
+  "test": "AWP-SES-007",
+  "level": "MUST",
+  "page": "/spec/session/lifecycle",
+  "text": "Worlds MUST emit a `session.state` notification \u2014 `&#123; state, status_seq, ts_mono_ns, reason? &#125;`, schema \u2014 on every transition from `Ready` onward;\u2026"
+ },
+ {
+  "id": "AWP-SES-008",
+  "side": "both",
+  "applies": "all",
+  "gate": "core",
+  "test": "AWP-SES-008",
+  "level": "MUST",
+  "page": "/spec/session/lifecycle",
+  "text": "Recovery in v0.1 covers loss of the control connection while the world process is alive. If the world has restarted or otherwise no longer holds\u2026"
+ },
+ {
+  "id": "AWP-SES-009",
+  "side": "world",
+  "applies": "all",
+  "gate": "core",
+  "test": "AWP-SES-009",
+  "level": "MAY",
+  "page": "/spec/session/lifecycle",
+  "text": "`session.ready` carries `session_id`, a world-assigned identifier stable for the life of the session and unique within the world process. It names\u2026"
+ },
+ {
+  "id": "AWP-SES-010",
+  "side": "world",
+  "applies": "all",
+  "gate": "core",
+  "test": "AWP-SES-010",
+  "level": "MUST",
+  "page": "/spec/session/lifecycle",
+  "text": "Ready/Active `session.resume` with a valid token on a new connection before the old connection's loss is detected The world closes the old\u2026"
+ },
+ {
+  "id": "AWP-SES-011",
+  "side": "world",
+  "applies": "all",
+  "gate": "core",
+  "test": "AWP-SES-011",
+  "level": "MUST",
+  "page": "/spec/session/lifecycle",
+  "text": "From `session.close` until `Closed` the session is closing. The world MUST send the `session.close` result only after every action has reached a\u2026"
+ },
+ {
+  "id": "AWP-SES-012",
+  "side": "both",
+  "applies": "all",
+  "gate": "core",
+  "test": "AWP-SES-012",
+  "level": "MUST",
+  "page": "/spec/session/lifecycle",
+  "text": "Heartbeat obligations begin at `session.ready` (AWP-SAF-001). A world MAY close a connection that has no session after a period of agent silence\u2026"
+ },
+ {
+  "id": "AWP-SIM-001",
+  "side": "world",
+  "applies": "lockstep",
+  "gate": "profile:sim",
+  "test": "AWP-SIM-001",
+  "level": "MUST",
+  "page": "/spec/profiles/sim",
+  "text": "`world.reset`: the manifest MUST list at least one entry in `initial_states`, and `world.reset &#123; initial_state &#125;` MUST return the world to that\u2026"
+ },
+ {
+  "id": "AWP-TIM-001",
+  "side": "world",
+  "applies": "all",
+  "gate": "core",
+  "test": "AWP-TIM-001",
+  "level": "MUST",
+  "page": "/spec/loop/time-models",
+  "text": "A world declares supported time models in its manifest; a session runs in exactly one."
+ },
+ {
+  "id": "AWP-TIM-002",
+  "side": "world",
+  "applies": "lockstep",
+  "gate": "core",
+  "test": "AWP-TIM-002",
+  "level": "MUST",
+  "page": "/spec/loop/time-models",
+  "text": "A lockstep world MUST declare `tick_policy: \"on_tick\"` and MUST advance only in response to `world.tick`."
+ },
+ {
+  "id": "AWP-TIM-003",
+  "side": "both",
+  "applies": "lockstep",
+  "gate": "core",
+  "test": "AWP-TIM-003",
+  "level": "MUST",
+  "page": "/spec/loop/time-models",
+  "text": "After each advance, the world MUST send every `action.status` and `world.event` produced by the advance on the control channel before the\u2026"
+ },
+ {
+  "id": "AWP-TIM-004",
+  "side": "world",
+  "applies": "lockstep",
+  "gate": "core",
+  "test": "AWP-TIM-004 (two seeded runs compared)",
+  "level": "MUST",
+  "page": "/spec/loop/time-models",
+  "text": "Wall-clock time MUST NOT influence world state in lockstep mode (determinism requirement; see reproducibility)."
+ },
+ {
+  "id": "AWP-TIM-005",
+  "side": "world",
+  "applies": "streaming",
+  "gate": "core",
+  "test": "AWP-TIM-005",
+  "level": "MUST",
+  "page": "/spec/loop/time-models",
+  "text": "The world advances in real time regardless of agent activity. Observation frames are pushed at negotiated rates, each carrying its capture time\u2026"
+ },
+ {
+  "id": "AWP-TIM-006",
+  "side": "world",
+  "applies": "streaming",
+  "gate": "core",
+  "test": "AWP-TIM-006",
+  "level": "MUST",
+  "page": "/spec/loop/time-models",
+  "text": "Telemetry. In streaming sessions the world MUST send a `session.telemetry` notification at least once per second aggregating, over the preceding\u2026"
+ },
+ {
+  "id": "AWP-TIM-007",
+  "side": "world",
+  "applies": "streaming",
+  "gate": "core",
+  "test": "AWP-TIM-007",
+  "level": "MUST",
+  "page": "/spec/loop/time-models",
+  "text": "Worlds MUST declare `safety_policy.safe_state` (behavior and `watchdog_ms`) and enforce it as specified in Liveness and safe state\u2026"
+ },
+ {
+  "id": "AWP-TIM-008",
+  "side": "world",
+  "applies": "all",
+  "gate": "core",
+  "test": "AWP-TIM-008",
+  "level": "MUST",
+  "page": "/spec/loop/time-models",
+  "text": "Worlds offering both models MUST implement identical manifests, schemas, and action lifecycles across them; only advancement and delivery\u2026"
+ },
+ {
+  "id": "AWP-TIM-009",
+  "side": "world",
+  "applies": "lockstep",
+  "gate": "core",
+  "test": "AWP-TIM-009",
+  "level": "MUST",
+  "page": "/spec/loop/time-models",
+  "text": "Initial observations. Immediately after `session.ready`, and after every `obs.subscribe`, the world MUST send one frame carrying the current tick\u2026"
+ },
+ {
+  "id": "AWP-TIM-010",
+  "side": "world",
+  "applies": "lockstep",
+  "gate": "core",
+  "test": "AWP-TIM-010",
+  "level": "MUST",
+  "page": "/spec/loop/time-models",
+  "text": "Staging. `action.submit` in lockstep is admitted immediately (AWP-LIF-002) and the action is *staged*: the world MUST NOT begin executing it\u2026"
+ },
+ {
+  "id": "AWP-TIM-011",
+  "side": "world",
+  "applies": "lockstep",
+  "gate": "core",
+  "test": "AWP-TIM-011",
+  "level": "MUST",
+  "page": "/spec/loop/time-models",
+  "text": "Advances. `world.tick &#123; expected_tick, count &#125;` performs `count` sequential advances (default 1) from `expected_tick`, which MUST equal the\u2026"
+ },
+ {
+  "id": "AWP-TIM-012",
+  "side": "world",
+  "applies": "lockstep",
+  "gate": "core",
+  "test": "AWP-TIM-012",
+  "level": "MUST",
+  "page": "/spec/loop/time-models",
+  "text": "Tick authority. The manifest declares `tick_authority`: `any_session` (the default for worlds that admit one lockstep session at a time) or\u2026"
+ },
+ {
+  "id": "AWP-TIM-013",
+  "side": "world",
+  "applies": "lockstep",
+  "gate": "core",
+  "test": "AWP-TIM-013",
+  "level": "MUST",
+  "page": "/spec/loop/time-models",
+  "text": "Session clock. In lockstep the session clock is simulated time: it MUST advance only with advances, by the same positive amount for every advance,\u2026"
+ },
+ {
+  "id": "AWP-TRN-001",
+  "side": "both",
+  "applies": "all",
+  "gate": "core",
+  "test": "AWP-TRN-001",
+  "level": "MUST",
+  "page": "/spec/transport/overview",
+  "text": "The control channel is carried on one control connection per session (AWP-CTL-007); worlds MUST offer the WebSocket binding for it. Optional\u2026"
+ },
+ {
+  "id": "AWP-TRN-002",
+  "side": "both",
+  "applies": "all",
+  "gate": "core",
+  "test": "AWP-TRN-002",
+  "level": "MUST",
+  "page": "/spec/transport/overview",
+  "text": "Bindings MUST preserve the order of every channel they carry."
+ },
+ {
+  "id": "AWP-TRN-003",
+  "side": "both",
+  "applies": "all",
+  "gate": "core",
+  "test": "AWP-TRN-003",
+  "level": "MUST",
+  "page": "/spec/transport/overview",
+  "text": "Channels \u2265 1 are carried either inline on the control connection or on stream connections negotiated in `session.ready`. A stream binding either\u2026"
+ },
+ {
+  "id": "AWP-TRN-004",
+  "side": "both",
+  "applies": "all",
+  "gate": "core",
+  "test": "AWP-TRN-004",
+  "level": "MUST",
+  "page": "/spec/transport/overview",
+  "text": "The inline binding \u2014 frames as `obs.frame` and `cmd.frame` notifications on the control channel (AWP-DAT-004) \u2014 is REQUIRED as the fallback when\u2026"
+ },
+ {
+  "id": "AWP-TRN-005",
+  "side": "both",
+  "applies": "all",
+  "gate": "core",
+  "test": "AWP-TRN-005",
+  "level": "MUST",
+  "page": "/spec/transport/overview",
+  "text": "Every message belongs to exactly one channel. Channel `0` is the control channel, present in every session and carrying every JSON-RPC message;\u2026"
+ },
+ {
+  "id": "AWP-TRN-006",
+  "side": "both",
+  "applies": "all",
+  "gate": "core",
+  "test": "AWP-TRN-006",
+  "level": "MUST",
+  "page": "/spec/transport/overview",
+  "text": "Classes. `control`: no loss, in order, replayed on resume by `status_seq`, audited in full. `reliable`: no loss, in `seq` order, resumed from a\u2026"
+ },
+ {
+  "id": "AWP-TRN-007",
+  "side": "both",
+  "applies": "all",
+  "gate": "core",
+  "test": "AWP-TRN-007",
+  "level": "MUST",
+  "page": "/spec/transport/overview",
+  "text": "Ordering. Order is guaranteed within a channel and never across channels; the only cross-channel relations are those the specification states\u2026"
+ },
+ {
+  "id": "AWP-TRN-008",
+  "side": "both",
+  "applies": "all",
+  "gate": "core",
+  "test": "AWP-TRN-008",
+  "level": "MUST",
+  "page": "/spec/transport/overview",
+  "text": "Resumption. On `session.resume` the control channel replays per AWP-CTL-008; the agent re-establishes stream connections from the re-issued\u2026"
+ },
+ {
+  "id": "AWP-TRN-009",
+  "side": "world",
+  "applies": "streaming",
+  "gate": "core (streaming)",
+  "test": "manual: needs control of transport backpressure; attach a stalled-receiver test showing at most one undelivered frame per latest-wins channel",
+  "level": "MUST",
+  "page": "/spec/transport/overview",
+  "text": "Dependent streams. On a binding without independent flow control, including inline, a `latest-wins` channel cannot drop in transit, so the sender\u2026"
+ },
+ {
+  "id": "AWP-TRN-010",
+  "side": "both",
+  "applies": "streaming",
+  "gate": "core (streaming)",
+  "test": "AWP-TRN-010",
+  "level": "MUST",
+  "page": "/spec/transport/overview",
+  "text": "Stream reconnection. If a stream connection is lost while the control connection remains, the agent MAY reconnect to the same endpoint with the\u2026"
+ },
+ {
+  "id": "AWP-TRN-011",
+  "side": "both",
+  "applies": "all",
+  "gate": "core",
+  "test": "AWP-TRN-011",
+  "level": "MUST",
+  "page": "/spec/transport/overview",
+  "text": "Frame size. Each stream endpoint MAY declare `max_frame_bytes` (default 16 MiB); senders MUST NOT emit a larger frame on it, and a world MUST NOT\u2026"
+ },
+ {
+  "id": "AWP-TSK-001",
+  "side": "world",
+  "applies": "all",
+  "gate": "capability:task",
+  "test": "AWP-TSK-001",
+  "level": "MUST",
+  "page": "/spec/session/task",
+  "text": "Worlds advertising the `task` capability accept an optional `task` on `session.open` and a `task.update` request mid-session; without the\u2026"
+ },
+ {
+  "id": "AWP-TSK-002",
+  "side": "world",
+  "applies": "all",
+  "gate": "capability:task",
+  "test": "AWP-TSK-002",
+  "level": "MUST",
+  "page": "/spec/session/task",
+  "text": "A task is `&#123; content: [ \u2026content blocks\u2026 ] &#125;`. Worlds MUST support `text` blocks, whose `text` is Markdown; other block types MAY be supported per\u2026"
+ },
+ {
+  "id": "AWP-TSK-003",
+  "side": "world",
+  "applies": "all",
+  "gate": "capability:task",
+  "test": "AWP-TSK-003",
+  "level": "MUST",
+  "page": "/spec/session/task",
+  "text": "`task.update` replaces the task whole (no diffing) and takes effect on acknowledgement; running actions are unaffected \u2014 the task conditions the\u2026"
+ },
+ {
+  "id": "AWP-TSK-004",
+  "side": "world",
+  "applies": "all",
+  "gate": "capability:task",
+  "test": "AWP-TSK-004",
+  "level": "MUST",
+  "page": "/spec/session/task",
+  "text": "The task confers nothing: grants, envelopes, and approval requirements are independent of its content."
+ },
+ {
+  "id": "AWP-TSK-005",
+  "side": "world",
+  "applies": "all",
+  "gate": "capability:task",
+  "test": "AWP-TSK-005 (warning)",
+  "level": "SHOULD",
+  "page": "/spec/session/task",
+  "text": "The initial task and every update appear in the audit log like any control-channel message, subject to `safety_policy.audit.redact_paths`\u2026"
+ },
+ {
+  "id": "AWP-UNI-001",
+  "side": "world",
+  "applies": "all",
+  "gate": "core",
+  "test": "manual: review of field names and units in the manifest and payload schemas",
+  "level": "MUST",
+  "page": "/spec/semantics/units-and-frames",
+  "text": "All physical quantities use SI units. Field names carry unit suffixes: `_m`, `_rad`, `_s`, `_ns`, `_mps`, `_radps`, `_n` (newtons), `_nm`\u2026"
+ },
+ {
+  "id": "AWP-UNI-002",
+  "side": "world",
+  "applies": "all",
+  "gate": "core",
+  "test": "AWP-UNI-002",
+  "level": "MUST",
+  "page": "/spec/semantics/units-and-frames",
+  "text": "Coordinate systems are right-handed; rotations are unit quaternions `q: [x, y, z, w]`."
+ },
+ {
+  "id": "AWP-UNI-003",
+  "side": "world",
+  "applies": "all",
+  "gate": "core",
+  "test": "AWP-UNI-003",
+  "level": "MUST",
+  "page": "/spec/semantics/units-and-frames",
+  "text": "The world publishes a frame tree in `session.ready`: named frames with parent links and static or timestamped transforms. Every pose in any\u2026"
+ },
+ {
+  "id": "AWP-UNI-004",
+  "side": "world",
+  "applies": "all",
+  "gate": "core",
+  "test": "AWP-UNI-004",
+  "level": "MUST",
+  "page": "/spec/semantics/units-and-frames",
+  "text": "Dynamic transforms (e.g. `base` \u2192 `world` for a mobile robot) are published on the reserved `awp.tf` channel."
+ },
+ {
+  "id": "AWP-VER-001",
+  "side": "both",
+  "applies": "all",
+  "gate": "core",
+  "test": "untestable: process or deployment policy",
+  "level": "MUST",
+  "page": "/spec/versioning-policy",
+  "text": "The protocol uses semver (`MAJOR.MINOR.PATCH`). From 1.0, wire-visible breaking changes bump MAJOR and additive capabilities bump MINOR; PATCH\u2026"
+ },
+ {
+  "id": "AWP-VER-002",
+  "side": "both",
+  "applies": "all",
+  "gate": "core",
+  "test": "AWP-VER-002",
+  "level": "MUST",
+  "page": "/spec/versioning-policy",
+  "text": "Agents send the list of protocol versions they support in `initialize`; the world MUST select the highest mutually supported version and echo it,\u2026"
+ },
+ {
+  "id": "AWP-VER-003",
+  "side": "both",
+  "applies": "all",
+  "gate": "core",
+  "test": "AWP-VER-003",
+  "level": "MUST",
+  "page": "/spec/versioning-policy",
+  "text": "Unknown fields in any message MUST be ignored, never treated as errors (forward compatibility)."
+ },
+ {
+  "id": "AWP-VER-004",
+  "side": "both",
+  "applies": "all",
+  "gate": "core",
+  "test": "AWP-VER-004",
+  "level": "MUST",
+  "page": "/spec/versioning-policy",
+  "text": "Extension fields and modalities MUST use the `x-&lt;vendor>.` prefix."
+ },
+ {
+  "id": "AWP-VER-005",
+  "side": "both",
+  "applies": "all",
+  "gate": "core",
+  "test": "untestable: process or deployment policy",
+  "level": "MUST",
+  "page": "/spec/versioning-policy",
+  "text": "Deprecated features remain functional for at least one MINOR release after the deprecation notice appears in the changelog."
+ },
+ {
+  "id": "AWP-VER-006",
+  "side": "both",
+  "applies": "all",
+  "gate": "core",
+  "test": "untestable: process or deployment policy",
+  "level": "MUST",
+  "page": "/spec/versioning-policy",
+  "text": "The negotiated protocol version alone determines wire compatibility; before 1.0 it is qualified by the draft revision (AWP-VER-009). Schema\u2026"
+ },
+ {
+  "id": "AWP-VER-007",
+  "side": "both",
+  "applies": "all",
+  "gate": "core",
+  "test": "AWP-VER-007",
+  "level": "MUST",
+  "page": "/spec/versioning-policy",
+  "text": "Within a wire version, optional features are discovered through the `capabilities` maps exchanged in manifests \u2014 never by version sniffing. A\u2026"
+ },
+ {
+  "id": "AWP-VER-008",
+  "side": "both",
+  "applies": "all",
+  "gate": "core",
+  "test": "AWP-VER-008",
+  "level": "MUST",
+  "page": "/spec/versioning-policy",
+  "text": "The version negotiated in `initialize` (`protocol_versions`, `protocol_version`) is the string `MAJOR.MINOR`, e.g. `\"0.1\"`. PATCH releases never\u2026"
+ },
+ {
+  "id": "AWP-VER-009",
+  "side": "both",
+  "applies": "all",
+  "gate": "core",
+  "test": "manual: the implementation's documentation and the conformance report name the draft revision",
+  "level": "MUST",
+  "page": "/spec/versioning-policy",
+  "text": "Implementations and conformance reports MUST name the draft revision they target (e.g. \"self-assessed against 0.1-draft.6\"); `\"0.1\"` alone does\u2026"
+ }
+]
