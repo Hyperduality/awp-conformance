@@ -6,9 +6,9 @@
   "properties": {
     "session_id": { "$ref": "common.schema.json#/$defs/session_id" },
     "session_token": { "type": "string", "minLength": 16, "description": "Credential; redacted in the audit log (AWP-SEC-003, AWP-AUD-006)." },
-    "reconnect_window_ms": { "type": "integer", "minimum": 0, "default": 30000 },
+    "reconnect_window_ms": { "type": "integer", "minimum": 0, "description": "AWP-CTL-005." },
     "replay_to_status_seq": { "$ref": "common.schema.json#/$defs/status_seq", "description": "session.resume result only: the highest status_seq assigned before resumption. Replay ends with this notification; later ones are live (AWP-CTL-008)." },
-    "heartbeat_interval_ms": { "type": "integer", "minimum": 100, "default": 5000, "description": "AWP-SAF-001." },
+    "heartbeat_interval_ms": { "type": "integer", "minimum": 100, "description": "AWP-SAF-001." },
     "granted": {
       "type": "object",
       "properties": {

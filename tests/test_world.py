@@ -142,6 +142,7 @@ FEATURE_TESTS = [
     "manifest",
     "task",
     "approval",
+    "standing-approval",
     "blend",
     "transfer",
     "seeding",
@@ -174,6 +175,7 @@ async def test_features_beyond_core_pass(tmp_path, mode):
         "AWP-TSK-002",
         "AWP-APR-001",
         "AWP-APR-002",
+        "AWP-APR-004",
         "AWP-APR-007",
         "AWP-PRE-004",
         "AWP-EMB-003",
@@ -184,3 +186,21 @@ async def test_features_beyond_core_pass(tmp_path, mode):
         else {"AWP-REP-001", "AWP-REP-002", "AWP-REP-003"}
     )
     assert common | specific <= passed
+
+
+async def test_catches_a_standing_approval_that_ignores_its_predicate(tmp_path):
+    from awp_sim.session import Standing
+
+    from .conftest import APPROVER, featured
+
+    server = await featured("streaming", tmp_path / "audit")
+    try:
+        original = Standing.admits
+        Standing.admits = lambda self, type, params, clock_ns: clock_ns <= self.expires_ns  # type: ignore[method-assign]
+        fixture = sim_fixture(tmp_path / "audit")
+        fixture.approver_token = APPROVER
+        run = await run_world(server.url, fixture, only=["standing-approval"])
+    finally:
+        Standing.admits = original  # type: ignore[method-assign]
+        await server.stop()
+    assert "AWP-APR-004" in failures(run)

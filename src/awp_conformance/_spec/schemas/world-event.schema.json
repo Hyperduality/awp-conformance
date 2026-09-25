@@ -18,7 +18,7 @@
     },
     "status_seq": { "$ref": "common.schema.json#/$defs/status_seq" },
     "ts_mono_ns": { "$ref": "common.schema.json#/$defs/ts_mono_ns" },
-    "tick": { "$ref": "common.schema.json#/$defs/tick" },
+    "tick": { "$ref": "common.schema.json#/$defs/tick", "description": "Lockstep: the tick of the event." },
     "detail": { "type": "object" }
   },
   "required": ["event", "status_seq", "ts_mono_ns"],

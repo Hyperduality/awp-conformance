@@ -271,6 +271,39 @@ async def queue(ctx: WorldContext) -> None:
     await ctx.settle(link)
 
 
+def _needs_moves(ctx: WorldContext) -> str | None:
+    return None if ctx.fixture.moves else "no fixture moves"
+
+
+@world_test("preempt-default", ["AWP-PRE-001"], needs=_needs_moves)
+async def preempt_default(ctx: WorldContext) -> None:
+    """A submission that selects no policy gets the first its type declares."""
+    decl = ctx.decls[ctx.moves()[0].type]
+    policies = decl["preemption"] if isinstance(decl["preemption"], list) else [decl["preemption"]]
+    link = await ctx.session()
+    first = await ctx.running(link)
+    _, reply = await ctx.submit(link, ctx.next_move())
+    if ctx.lockstep and reply.ok:
+        await ctx.advance(link)
+    await link.wait_for(lambda: ctx.state(link, first) != "executing", 1.0)
+    outcome = {
+        "replace": ctx.state(link, first) == "preempted",
+        "blend": ctx.state(link, first) == "preempted",
+        "queue": reply.get("state") == "queued",
+        "reject": reply.code == 3002,
+    }.get(policies[0])
+    if outcome is None:
+        ctx.na("AWP-PRE-001", f"first declared policy {policies[0]} is not a standard one")
+    else:
+        ctx.check(
+            "AWP-PRE-001",
+            outcome,
+            f"with no preempt, {policies[0]} (declared first) did not apply: the running move is "
+            f"{ctx.state(link, first)}, the new one {reply.get('state') or reply.error}",
+        )
+    await ctx.settle(link)
+
+
 @world_test("replace", ["AWP-PRE-003", "AWP-PRE-007"], needs=_needs_policy("replace"))
 async def replace(ctx: WorldContext) -> None:
     link = await ctx.session()

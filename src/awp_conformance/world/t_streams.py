@@ -25,6 +25,7 @@ STREAM_REQS = (
     "AWP-TRN-013",
     "AWP-SEC-004",
     "AWP-DAT-006",
+    "AWP-DAT-010",
 )
 
 
@@ -87,6 +88,23 @@ class StreamLink:
                 await self._task
 
 
+async def _closes_on_malformed(ctx: WorldContext, stream: StreamLink) -> None:
+    """A frame of an unknown version closes the stream connection (AWP-DAT-010, AWP-TRN-013)."""
+    assert stream.ws is not None
+    bad = bytearray(28)
+    bad[0:4], bad[4], bad[6] = b"AWPF", 2, 1
+    with contextlib.suppress(ConnectionClosed):
+        await stream.ws.send(bytes(bad))
+    await asyncio.wait({asyncio.ensure_future(stream.closed.wait())}, timeout=2.0)
+    closed = stream.closed.is_set()
+    how = f"closed with {stream.ws.close_code} {stream.ws.close_reason!r}" if closed else "open"
+    ctx.check(
+        "AWP-DAT-010",
+        closed and (stream.ws.close_code, stream.ws.close_reason) == (1002, "AWP_MALFORMED"),
+        f"a malformed frame left the stream connection {how}",
+    )
+
+
 def _endpoint(link: Link) -> dict[str, Any] | None:
     for e in (link.tracker.ready or {}).get("stream_endpoints", []):
         if e.get("binding") == "ws" and e.get("url"):
@@ -146,6 +164,7 @@ async def ws_stream(ctx: WorldContext) -> None:
         "AWP-TRN-013", stream.ws is not None and stream.ws.subprotocol == "awp", "subprotocol"
     )
     if ctx.lockstep:
+        await _closes_on_malformed(ctx, stream)
         await stream.close()
         return
 
@@ -187,4 +206,5 @@ async def ws_stream(ctx: WorldContext) -> None:
         all(f.resync for cid, f in firsts.items() if cid in {c.channel_id for c in reliable}),
         "a reliable channel restarted without a resync keyframe",
     )
+    await _closes_on_malformed(ctx, again)
     await again.close()

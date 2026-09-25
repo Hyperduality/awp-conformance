@@ -143,6 +143,12 @@ async def watchdog(ctx: WorldContext) -> None:
     if watchdog_ms is None:
         return
     link = await ctx.session(heartbeat=False)
+    window = (link.tracker.ready or {}).get("reconnect_window_ms", 0)
+    ctx.check(
+        "AWP-SAF-003",
+        window >= watchdog_ms,
+        f"reconnect_window_ms {window} is shorter than watchdog_ms {watchdog_ms}",
+    )
     action_id = await ctx.running(link)
     last_sent = now_ns()  # the submission was the last message this agent originated
     link.heartbeat = False

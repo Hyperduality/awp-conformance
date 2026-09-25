@@ -27,6 +27,7 @@ def _slow(ctx: WorldContext, wait_ms: float) -> str | None:
         "AWP-SAF-007",
         "AWP-SAF-008",
         "AWP-SAF-009",
+        "AWP-TIM-009",
     ],
 )
 async def resume_replay(ctx: WorldContext) -> None:
@@ -70,6 +71,28 @@ async def resume_replay(ctx: WorldContext) -> None:
         tracker.highest >= replay_to,
         f"replay stopped at {tracker.highest} of {replay_to}",
     )
+    if ctx.lockstep:
+        tick = reply.get("tick")
+        per_tick = {
+            g["channel_id"] for g in reply["granted"]["channels"] if g.get("rate_hz") is None
+        }
+
+        def resynced() -> set[int]:
+            return {
+                m["params"]["channel_id"]
+                for _, m in resumed.notes
+                if m.get("method") == "obs.frame"
+                and m["params"].get("tick") == tick
+                and m["params"].get("flags", 0) & 0x09 == 0x09
+            }
+
+        await resumed.wait_for(lambda: per_tick <= resynced(), 3.0)
+        ctx.check(
+            "AWP-TIM-009",
+            per_tick <= resynced(),
+            f"after the replay, resync keyframes at tick {tick} arrived on {sorted(resynced())} "
+            f"of the per-tick channels {sorted(per_tick)}",
+        )
     states = tracker.states
     ctx.check(
         "AWP-SES-003",

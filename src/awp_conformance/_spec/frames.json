@@ -4,7 +4,7 @@
   "vectors": [
     {
       "name": "minimal",
-      "description": "No flags, no extensions, 15-byte JSON payload.",
+      "description": "No flags, no extensions, 16-byte JSON payload.",
       "hex": "415750460100010001000000000000000000000000000000100000007b22617661746172223a5b322c335d7d",
       "expect": {
         "channel_id": 1,
@@ -84,7 +84,7 @@
     },
     {
       "name": "unknown_extension",
-      "description": "Unknown registered-range type 0x3f (len 3) must be skipped; vendor type 0x9a (len 2) is surfaced.",
+      "description": "Reserved type 0x3f (len 3) must be skipped; vendor type 0x9a (len 2) is surfaced.",
       "hex": "415750460104020009000000000000000500000000000000100000001300010801000000000000003f03aabbcc9a02dead7b22617661746172223a5b322c335d7d",
       "expect": {
         "channel_id": 2,
@@ -202,6 +202,24 @@
       "name": "bad_magic",
       "description": "Magic is not AWPF.",
       "hex": "41575047010001000100000000000000000000000000000000000000",
+      "expect_error": "AWP_MALFORMED"
+    },
+    {
+      "name": "unknown_version",
+      "description": "Version 2: not a version this revision defines (AWP-DAT-010).",
+      "hex": "415750460200010001000000000000000000000000000000100000007b22617661746172223a5b322c335d7d",
+      "expect_error": "AWP_MALFORMED"
+    },
+    {
+      "name": "trailing_bytes",
+      "description": "One byte beyond the length the header gives (AWP-DAT-010).",
+      "hex": "415750460100010001000000000000000000000000000000100000007b22617661746172223a5b322c335d7d00",
+      "expect_error": "AWP_MALFORMED"
+    },
+    {
+      "name": "resync_without_keyframe",
+      "description": "Resync flag (bit 3) without keyframe (bit 0) (AWP-DAT-010).",
+      "hex": "415750460108010003000000000000000400000000000000100000007b22617661746172223a5b322c335d7d",
       "expect_error": "AWP_MALFORMED"
     },
     {

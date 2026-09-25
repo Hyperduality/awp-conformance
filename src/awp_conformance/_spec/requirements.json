@@ -187,12 +187,12 @@
   "test": "AWP-AGT-007",
   "level": "MUST",
   "page": "/spec/profiles/core",
-  "text": "On `session.resume`, pass `last_status_seq` and treat the embodiment as being in safe state until a new action executes (AWP-CTL-008, AWP-SAF-008)."
+  "text": "On `session.resume`, pass `last_status_seq`, process the replay through `replay_to_status_seq` before resubmitting an action whose admission it\u2026"
  },
  {
   "id": "AWP-AGT-008",
   "side": "agent",
-  "applies": "all",
+  "applies": "streaming",
   "gate": "core",
   "test": "AWP-AGT-008",
   "level": "MUST",
@@ -247,7 +247,7 @@
   "test": "AWP-APR-004",
   "level": "MUST",
   "page": "/spec/safety/approval",
-  "text": "Approvals are per-action; worlds MAY support scoped standing approvals (type + parameter predicate + expiry), which MUST appear in the audit log."
+  "text": "Standing approvals. Approvals are per-action. A world MAY support scoped standing approvals and declares that it does with\u2026"
  },
  {
   "id": "AWP-APR-005",
@@ -427,7 +427,7 @@
   "test": "AWP-CLK-006",
   "level": "MUST",
   "page": "/spec/semantics/timestamps-and-clocks",
-  "text": "Agent clock. The agent keeps its own monotonic nanosecond counter, the agent clock, starting \u22650 and bounded per AWP-CTL-009. It appears on the\u2026"
+  "text": "Agent clock. The agent keeps its own monotonic nanosecond counter, the agent clock, starting \u22650, bounded per AWP-CTL-009, and monotonic for the\u2026"
  },
  {
   "id": "AWP-CLK-007",
@@ -647,7 +647,7 @@
   "test": "AWP-CTL-005",
   "level": "MUST",
   "page": "/spec/transport/control-channel",
-  "text": "Reconnection. A lost control connection moves the session to `Suspended` and does not terminate it for `reconnect_window_ms` (declared in\u2026"
+  "text": "Reconnection. A lost control connection moves the session to `Suspended` and does not terminate it for `reconnect_window_ms`, declared in\u2026"
  },
  {
   "id": "AWP-CTL-006",
@@ -687,7 +687,7 @@
   "test": "AWP-CTL-009",
   "level": "MUST",
   "page": "/spec/transport/control-channel",
-  "text": "64-bit integers in JSON. `ts_mono_ns`, `ts_sim_ns`, `ts_send_ns`, `received_ts_mono_ns`, `basis_ts_mono_ns`, `valid_until_ns`, `origin_ns`,\u2026"
+  "text": "64-bit integers. `ts_mono_ns`, `ts_sim_ns`, `ts_send_ns`, `received_ts_mono_ns`, `basis_ts_mono_ns`, `valid_until_ns`, `origin_ns`, `receive_ns`,\u2026"
  },
  {
   "id": "AWP-CTL-010",
@@ -705,6 +705,7 @@
   "applies": "all",
   "gate": "core",
   "test": "AWP-DAT-001",
+  "agent_test": "AWP-DAT-001, else manual: attach the receiver's tests of loss accounting by seq gap",
   "level": "MUST",
   "page": "/spec/transport/frames",
   "text": "Frames MUST carry per-channel monotonically increasing `seq`; receivers detect loss by gaps."
@@ -785,9 +786,21 @@
   "applies": "all",
   "gate": "core",
   "test": "AWP-DAT-009",
+  "agent_test": "AWP-DAT-009, else manual: attach the receiver's tests that a gap before a resync frame is not counted as loss and that delta state before it is discarded",
   "level": "MUST",
   "page": "/spec/transport/frames",
   "text": "Resync. The `resync` flag (bit 3) marks the first frame a sender emits after a discontinuity it knows about \u2014 resumption (AWP-TRN-008), a keyframe\u2026"
+ },
+ {
+  "id": "AWP-DAT-010",
+  "side": "both",
+  "applies": "all",
+  "gate": "core",
+  "test": "AWP-DAT-010",
+  "agent_test": "AWP-DAT-010, else manual: attach the receiver's tests that malformed frames are dropped",
+  "level": "MUST",
+  "page": "/spec/transport/frames",
+  "text": "Malformed frames. A frame is malformed if its magic is not `AWPF`, its version is not `1`, its length differs from the one its header and\u2026"
  },
  {
   "id": "AWP-EMB-001",
@@ -987,7 +1000,7 @@
   "test": "AWP-LIF-001",
   "level": "MUST",
   "page": "/spec/loop/action-lifecycle",
-  "text": "Every transition MUST be one listed in the transition table. The world MUST send an `action.status` notification on every transition after\u2026"
+  "text": "Every transition MUST be one listed in the transition table. The world MUST report every transition after admission exactly once: a transition an\u2026"
  },
  {
   "id": "AWP-LIF-002",
@@ -1331,10 +1344,11 @@
  },
  {
   "id": "AWP-OBS-007",
-  "side": "agent",
+  "side": "both",
   "applies": "streaming",
   "gate": "core (streaming)",
-  "test": "AWP-OBS-007 (warning)",
+  "test": "AWP-OBS-007",
+  "agent_test": "AWP-OBS-007 (warning)",
   "level": "MUST",
   "page": "/spec/loop/observations",
   "text": "Receiver report. In streaming sessions the agent SHOULD send an `obs.report` notification (schema) at least every 5 s covering the preceding\u2026"
@@ -1347,7 +1361,7 @@
   "test": "AWP-PRE-001",
   "level": "MUST",
   "page": "/spec/loop/preemption",
-  "text": "Each action type declares its preemption policy in the manifest; the submitter selects one of the declared options per submission."
+  "text": "Each action type declares its preemption policy in the manifest; the submitter selects one of the declared options per submission, and a\u2026"
  },
  {
   "id": "AWP-PRE-002",
@@ -1577,7 +1591,7 @@
   "test": "AWP-SAF-001",
   "level": "MUST",
   "page": "/spec/safety/safe-state",
-  "text": "`session.ready` declares `heartbeat_interval_ms` (default 5000). Each side MUST send `ping` at least every `heartbeat_interval_ms` and MUST answer\u2026"
+  "text": "`session.ready` declares `heartbeat_interval_ms`. Each side MUST send `ping` at least every `heartbeat_interval_ms` and MUST answer `ping` with\u2026"
  },
  {
   "id": "AWP-SAF-002",
@@ -2057,7 +2071,7 @@
   "test": "AWP-TRN-001",
   "level": "MUST",
   "page": "/spec/transport/overview",
-  "text": "The control channel is carried on one control connection per session (AWP-CTL-007); worlds MUST offer the WebSocket binding for it. Optional\u2026"
+  "text": "The control channel is carried on one control connection per session (AWP-CTL-007); worlds MUST offer the WebSocket binding for it, on which the\u2026"
  },
  {
   "id": "AWP-TRN-002",
@@ -2307,7 +2321,7 @@
   "test": "AWP-VER-004",
   "level": "MUST",
   "page": "/spec/versioning-policy",
-  "text": "Extension fields and modalities MUST use the `x-&lt;vendor>.` prefix."
+  "text": "Extension fields and modalities MUST use the `x-&lt;vendor>.` prefix, and every message a sender produces MUST be valid against the sender form of\u2026"
  },
  {
   "id": "AWP-VER-005",
@@ -2357,6 +2371,6 @@
   "test": "manual: the implementation's documentation and the conformance report name the draft revision",
   "level": "MUST",
   "page": "/spec/versioning-policy",
-  "text": "Implementations and conformance reports MUST name the draft revision they target (e.g. \"self-assessed against 0.1-draft.8\"); `\"0.1\"` alone does\u2026"
+  "text": "Implementations and conformance reports MUST name the draft revision they target (e.g. \"self-assessed against 0.1-draft.9\"); `\"0.1\"` alone does\u2026"
  }
 ]

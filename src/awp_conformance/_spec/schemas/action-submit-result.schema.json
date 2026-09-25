@@ -9,6 +9,7 @@
     "status_seq": { "$ref": "common.schema.json#/$defs/status_seq", "description": "The transition this result reports; for an idempotent resubmission, the action's most recent transition (no new status_seq is consumed)." },
     "received_ts_mono_ns": { "$ref": "common.schema.json#/$defs/ts_mono_ns", "description": "Session-clock time the world received the submission; origin of deadline_ms and of admission latency." },
     "ts_mono_ns": { "$ref": "common.schema.json#/$defs/ts_mono_ns", "description": "Time of the reported transition." },
+    "approval_id": { "type": "string", "minLength": 1, "description": "Present when the action was admitted under a standing approval: the approval_id of the request the grant answered (AWP-APR-004)." },
     "reason": { "$ref": "common.schema.json#/$defs/status_reason", "description": "Present when an idempotent resubmission reports a rejected, failed, or cancelled action." }
   },
   "required": ["action_id", "state", "status_seq", "received_ts_mono_ns", "ts_mono_ns"],

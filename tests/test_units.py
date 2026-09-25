@@ -11,7 +11,23 @@ from awp_conformance.scope import Scope
 def test_matrix_is_bundled():
     assert len(spec.REQUIREMENTS) > 200
     assert spec.REQUIREMENTS["AWP-ACT-001"].level == "MUST"
-    assert spec.REQUIREMENTS["AWP-LIF-003"].kind == "warning"
+    assert spec.REQUIREMENTS["AWP-LIF-003"].kind_for("world") == "warning"
+    dat = spec.REQUIREMENTS["AWP-DAT-001"]
+    assert (dat.kind_for("world"), dat.kind_for("agent")) == ("assert", "fallback")
+
+
+def test_a_fallback_row_is_manual_only_when_nothing_observed_it():
+    from awp_conformance.results import Outcome, Results
+
+    unobserved = Results(side="agent")
+    assert unobserved.verdict("AWP-DAT-001") is Outcome.MANUAL
+    observed = Results(side="agent")
+    observed.check("AWP-DAT-001", True, "counted", "t")
+    assert observed.verdict("AWP-DAT-001") is Outcome.PASS
+    failed = Results(side="agent")
+    failed.check("AWP-DAT-001", False, "not counted", "t")
+    assert failed.verdict("AWP-DAT-001") is Outcome.FAIL
+    assert Results(side="world").verdict("AWP-DAT-001") is Outcome.UNTESTED
 
 
 def test_frame_decoder_matches_every_vector():

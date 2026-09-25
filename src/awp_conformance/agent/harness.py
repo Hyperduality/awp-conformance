@@ -3,8 +3,9 @@
 The harness serves a manifest it is given and behaves as a minimal, conformant world for it:
 actions validate against their schemas and run for a fixed time (or number of advances), frames
 carry sample payloads, and statuses are sequenced and replayed. An `Episode` adds the stimuli that
-make agent requirements observable — unknown fields, redelivered statuses, a dropped connection, an
-invalid manifest, withheld grants — and every agent message is checked as it arrives.
+make agent requirements observable — unknown fields, redelivered statuses, world traffic between a
+request and its response, seq gaps, a dropped connection, an invalid manifest, withheld grants — and
+every agent message is checked as it arrives.
 """
 
 from __future__ import annotations
@@ -30,6 +31,8 @@ from .. import spec
 from ..results import Results
 
 MS = 1_000_000
+GAP = 3  # frames skipped by seq in the frame-gaps episode
+PRESESSION_OFFSET_NS = 1_000_000 * MS  # pongs before session.ready are on a clock 1000 s ahead
 UNKNOWN = {"future_field_v0_2": {"any": "value"}, "x-conformance.note": 1}
 REDACTED_MANIFEST_KEY = "embodiments"
 
@@ -41,11 +44,16 @@ class Episode:
     unknown_fields: bool = True
     redeliver: bool = True
     drop_after_admission: bool = False
+    forget_session: bool = False  # the world no longer holds the session when the agent resumes
     invalid_manifest: bool = False
     grant_no_actions: bool = False
     silent_after_admission: bool = False
     offer_stream: bool = True
     refuse_first_submission: bool = False
+    interpose: bool = False  # world traffic between each action.submit and its result
+    frame_gaps: bool = False  # a seq gap on one channel, a resync after a gap on another
+    out_of_range: bool = False  # an integer beyond 2^53-1 after the first admission
+    malformed_frame: bool = False  # a malformed frame on the stream connection
     action_ms: int = 600
     action_ticks: int = 5
     heartbeat_interval_ms: int = 1000
@@ -87,6 +95,9 @@ class _Session:
     seq_at_drop: int | None = None
     stream_ws: ServerConnection | None = None
     stream_fresh: set[int] = field(default_factory=set)
+    sent_tick: dict[int, int] = field(default_factory=dict)  # channel → tick of its last frame
+    late_frames: asyncio.Task[None] | None = None
+    gaps: list[tuple[int, int, bool]] = field(default_factory=list)  # (channel, at seq, resync)
 
 
 class Harness:
@@ -125,7 +136,21 @@ class Harness:
         self.agent_pings: list[int] = []
         self.pong_delays: list[float] = []
         self.clock_samples = 0  # agent pings answered before the first valid_until_ns
-        self.reports: list[int] = []
+        self.reports: list[tuple[int, dict[str, Any]]] = []
+        self.presession_pings = 0
+        self.session_samples: list[int] = []  # stamp - origin_ns of each in-session agent ping
+        self.interposed: dict[str, bool] = {}  # world ping id → answered
+        self.gaps_done_ns: int | None = None
+        self.forgotten = False  # session.resume was answered AWP_SESSION_UNKNOWN
+        self.range_sent = False
+        self.closed_after_range = False  # the agent sent session.close after it
+        self.agent_close: tuple[int | None, str | None] | None = None  # control connection
+        self.malformed_sent = False
+        self.stream_close: tuple[int | None, str | None] | None = None  # after the bad frame
+        self.reopened = False
+        self.orphaned: list[str] = []  # session requests after the loss, before a new session
+        self.stale_refs: list[str] = []  # actions of the forgotten session the agent asked about
+        self.expected_gaps: dict[int, int] = {}
         self.ticks_called = 0
         self.dropped = False
         self.manifest_sent = False
@@ -142,6 +167,7 @@ class Harness:
         self.session_started_ns: int | None = None
         self._loop_task: asyncio.Task[None] | None = None
         self.done = asyncio.Event()
+        self.created_ns = time.monotonic_ns()
 
     # ------------------------------------------------------------ findings
 
@@ -167,6 +193,9 @@ class Harness:
         self._loop_task = asyncio.create_task(self._run())
 
     async def stop(self) -> None:
+        for s in self.sessions.values():
+            if s.late_frames is not None:
+                s.late_frames.cancel()
         if self._loop_task is not None:
             self._loop_task.cancel()
             with contextlib.suppress(asyncio.CancelledError):
@@ -229,6 +258,8 @@ class Harness:
         except ConnectionClosed:
             pass
         finally:
+            if self.malformed_sent and self.stream_close is None:
+                self.stream_close = (ws.close_code, ws.close_reason)
             if s.stream_ws is ws:
                 s.stream_ws = None
 
@@ -243,6 +274,8 @@ class Harness:
         except ConnectionClosed:
             pass
         finally:
+            if self.range_sent and self.agent_close is None:
+                self.agent_close = (ws.close_code, ws.close_reason)
             if self.silent and self.agent_closed_at is None:
                 self.agent_closed_at = time.monotonic_ns()
             s = self.session
@@ -313,6 +346,20 @@ class Harness:
             s.redelivered = True
             await self._note(s, "action.status", a.status)  # AWP-LIF-009: a redelivery
 
+    def _reported(self, s: _Session, a: _Action, state: str, **extra: Any) -> None:
+        """A transition reported in a result rather than notified (AWP-LIF-001), replayable."""
+        a.state = state
+        s.seq += 1
+        body: dict[str, Any] = {
+            "action_id": a.action_id,
+            "state": state,
+            "ts_mono_ns": self.clock(s),
+            "status_seq": s.seq,
+            **extra,
+        }
+        s.log[s.seq] = ("action.status", body)
+        a.status = body
+
     def _endpoints(self) -> list[dict[str, Any]]:
         stream = (
             [{"binding": "ws", "url": self.url + "/stream"}] if self.episode.offer_stream else []
@@ -331,6 +378,14 @@ class Harness:
 
     async def _frame(self, s: _Session, cid: int, *, resync: bool = False) -> None:
         name = s.channels[cid]["channel"]
+        s.sent_tick[cid] = s.tick
+        for gap in list(s.gaps):
+            if gap[0] == cid and s.frame_seq.get(cid, 0) == gap[1]:
+                s.gaps.remove(gap)
+                s.frame_seq[cid] += GAP
+                resync = resync or gap[2]
+                if not s.gaps:
+                    self.gaps_done_ns = time.monotonic_ns()
         s.frame_seq[cid] = s.frame_seq.get(cid, 0) + 1
         ts = self.clock(s)
         s.frames_ts.add(ts)
@@ -387,8 +442,10 @@ class Harness:
         handler: Callable[..., Any] | None = getattr(self, "_rpc_" + method.replace(".", "_"), None)
         if "id" not in msg:
             if method == "obs.report":
-                self.reports.append(time.monotonic_ns())
+                self.reports.append((time.monotonic_ns(), params))
             return
+        if self.forgotten and not self.reopened and method in _SESSION_METHODS:
+            self.orphaned.append(method)
         if handler is None:
             await self._error(ws, msg["id"], -32601, "Method not found")
             return
@@ -402,9 +459,12 @@ class Harness:
                 "AWP-CTL-002", code == -32601, f"the agent answered an unknown method with {code}"
             )
             return
-        sent = self._pending_pings.pop(str(msg.get("id")), None)
+        rid = str(msg.get("id"))
+        sent = self._pending_pings.pop(rid, None)
         if sent is None:
             return
+        if rid in self.interposed:
+            self.interposed[rid] = True
         delay = (time.monotonic_ns() - sent) / MS
         self.pong_delays.append(delay)
         r = msg.get("result") or {}
@@ -455,7 +515,13 @@ class Harness:
         )
         self.origins.append(origin)
         self.check("AWP-CTL-004", "origin_ns" in p, "the agent's ping lacks origin_ns")
-        stamp = self.clock(s) if s else 0
+        if s is None:  # a world clock that is not a session clock (AWP-SES-012)
+            self.presession_pings += 1
+            stamp = PRESESSION_OFFSET_NS + time.monotonic_ns() - self.created_ns
+        else:
+            stamp = self.clock(s)
+            if isinstance(origin, int):
+                self.session_samples.append(stamp - origin)
         await self._result(
             ws, rid, {"origin_ns": p.get("origin_ns", 0), "receive_ns": stamp, "transmit_ns": stamp}
         )
@@ -464,6 +530,7 @@ class Harness:
 
     async def _rpc_session_open(self, ws: ServerConnection, rid: Any, p: dict[str, Any]) -> None:
         self.opened = True
+        self.reopened = self.reopened or self.forgotten
         if self.episode.invalid_manifest:
             self.check(
                 "AWP-AGT-002",
@@ -532,6 +599,11 @@ class Harness:
             ready["tick"] = 0
         await self._result(ws, rid, ready)
         await self._state(s, "ready", "opened")
+        if self.episode.frame_gaps and channels and mode == "streaming":
+            first, last = min(channels), max(channels)
+            s.gaps = [(first, 3, False), (last, 8 if last == first else 3, True)]
+            for cid, _, resync in s.gaps:
+                self.expected_gaps[cid] = self.expected_gaps.get(cid, 0) + (0 if resync else GAP)
         for cid in channels:
             await self._frame(s, cid)
             s.next_due[cid] = time.monotonic_ns()
@@ -546,6 +618,12 @@ class Harness:
             await self._error(ws, rid, 2005, "AWP_SESSION_UNKNOWN")
             return
         self.resumed.append(p)
+        if self.episode.forget_session:
+            self.forgotten = True
+            self.sessions.pop(s.token, None)
+            self.session = None
+            await self._error(ws, rid, 2005, "AWP_SESSION_UNKNOWN")
+            return
         last = p.get("last_status_seq")
         delivered = s.seq_at_drop if s.seq_at_drop is not None else s.seq
         self.check(
@@ -581,10 +659,14 @@ class Harness:
             method, body = s.log[seq]
             await self._note(s, method, body)
         await self._state(s, "active", "resumed")
+        if s.late_frames is not None:
+            s.late_frames.cancel()  # the resync frames carry the current tick
+            s.late_frames = None
         for cid in s.channels:
             await self._frame(s, cid, resync=True)
 
     async def _rpc_session_close(self, ws: ServerConnection, rid: Any, p: dict[str, Any]) -> None:
+        self.closed_after_range = self.closed_after_range or self.range_sent
         s = self.session
         if s is None:
             await self._error(ws, rid, -32600, "Invalid request")
@@ -623,9 +705,18 @@ class Harness:
         assert s is not None
         await self._result(ws, rid, {"granted": list(s.channels.values())})
 
+    def _stale(self, s: _Session | None, action_id: str) -> None:
+        if (
+            self.forgotten
+            and action_id in self.admitted_ids
+            and (s is None or action_id not in s.actions)
+        ):
+            self.stale_refs.append(action_id)
+
     async def _rpc_action_status(self, ws: ServerConnection, rid: Any, p: dict[str, Any]) -> None:
         s = self.session
         a = s.actions.get(p.get("action_id", "")) if s else None
+        self._stale(s, p.get("action_id", ""))
         if a is None:
             await self._error(ws, rid, 3008, "AWP_ACTION_UNKNOWN")
             return
@@ -634,13 +725,14 @@ class Harness:
     async def _rpc_action_cancel(self, ws: ServerConnection, rid: Any, p: dict[str, Any]) -> None:
         s = self.session
         a = s.actions.get(p.get("action_id", "")) if s else None
+        self._stale(s, p.get("action_id", ""))
         if s is None or a is None:
             await self._error(ws, rid, 3008, "AWP_ACTION_UNKNOWN")
             return
         if a.state in ("accepted", "queued", "pending_approval"):
-            await self._status(s, a, "cancelled", reason="cancelled_by_agent")
+            self._reported(s, a, "cancelled", reason="cancelled_by_agent")
         elif a.state == "executing":
-            await self._status(s, a, "cancelling", reason="cancelled_by_agent")
+            self._reported(s, a, "cancelling", reason="cancelled_by_agent")
         await self._result(
             ws, rid, {k: a.status[k] for k in ("action_id", "state", "status_seq") if k in a.status}
         )
@@ -652,6 +744,17 @@ class Harness:
             self.check("AWP-AGT-009", False, "the agent called world.tick in a streaming session")
             await self._error(ws, rid, 2002, "AWP_TIME_MODEL_UNSUPPORTED")
             return
+        if s.late_frames is not None:
+            held = all(s.sent_tick.get(cid) == s.tick for cid in s.channels)
+            self.check(
+                "AWP-TIM-003",
+                held,
+                "the agent waited for each advance's frames on the stream"
+                if held
+                else f"world.tick sent before the stream frames of tick {s.tick} arrived",
+            )
+            await s.late_frames
+            s.late_frames = None
         expected = p.get("expected_tick")
         self.check(
             "AWP-AGT-006",
@@ -661,7 +764,8 @@ class Harness:
         if expected != s.tick:
             await self._error(ws, rid, 3009, "AWP_TICK_MISMATCH", tick=s.tick)
             return
-        for _ in range(int(p.get("count", 1))):
+        count = int(p.get("count", 1))
+        for n in range(count):
             s.tick += 1
             for a in list(s.actions.values()):
                 if a.state == "accepted":
@@ -682,9 +786,18 @@ class Harness:
                     await self._status(
                         s, a, "cancelled", reason="cancelled_by_agent", aborted_at_progress=0.5
                     )
-            for cid in s.channels:
-                await self._frame(s, cid)
+            if n < count - 1 or s.stream_ws is None:
+                for cid in s.channels:
+                    await self._frame(s, cid)
         await self._result(ws, rid, {"tick": s.tick})
+        if s.stream_ws is not None:  # a stream's frames may follow the result (AWP-TIM-003)
+            s.late_frames = asyncio.create_task(self._late_frames(s))
+
+    async def _late_frames(self, s: _Session) -> None:
+        await asyncio.sleep(0.1)
+        for cid in s.channels:
+            if s.sent_tick.get(cid) != s.tick:
+                await self._frame(s, cid)
 
     async def _rpc_action_submit(self, ws: ServerConnection, rid: Any, p: dict[str, Any]) -> None:
         s = self.session
@@ -719,17 +832,17 @@ class Harness:
                 },
             )
             return
-        refused = self.refused.get(action_id)
-        if refused is not None:
-            content, retryable = refused
-            same = all(
-                (f in content) == (f in p) and content.get(f) == p.get(f)
-                for f in spec.SUBMIT_FIELDS
-            )
+        retried = [
+            refused_id
+            for refused_id, (content, retryable) in self.refused.items()
+            if not retryable
+            and all(content.get(f) == p.get(f) for f in ("type", "params", "embodiment_id"))
+        ]
+        if self.refused:
             self.check(
                 "AWP-ERR-001",
-                retryable or not same,
-                f"{action_id} retried with identical params after a non-retryable error",
+                not retried,
+                f"{action_id} retries {retried[:1]}, refused with a non-retryable error",
             )
         self.check(
             "AWP-AGT-003",
@@ -789,6 +902,8 @@ class Harness:
             self.refused[action_id] = (p, False)
             await self._error(ws, rid, 3001, "AWP_PARAMS_INVALID")
             return
+        if self.episode.interpose:
+            await self._interpose(s)
         a = _Action(action_id, dict(p), decl, "accepted")
         s.actions[action_id] = a
         self.admitted_ids.add(action_id)
@@ -804,6 +919,16 @@ class Harness:
             await self._status(s, a, "executing", progress=0.0)
             if decl.get("duration") == "instant":
                 await self._status(s, a, "completed", progress=1.0)
+        if self.episode.out_of_range and not self.range_sent:
+            self.range_sent = True
+            await self._send(
+                ws,
+                {
+                    "jsonrpc": "2.0",
+                    "method": "session.telemetry",
+                    "params": {"window_ms": 2**53},
+                },
+            )
         if self.episode.silent_after_admission and not self.silent:
             self.silent = True
             self.silent_since = time.monotonic_ns()
@@ -811,6 +936,19 @@ class Harness:
             self.dropped = True
             s.seq_at_drop = s.seq
             await ws.close(code=1011, reason="conformance: connection drop")
+
+    async def _interpose(self, s: _Session) -> None:
+        """A world request, and in streaming a frame per channel, before the response."""
+        rid = f"i{len(self.interposed) + 1}"
+        self.interposed[rid] = False
+        self._pending_pings[rid] = time.monotonic_ns()
+        await self._send(
+            s.ws,
+            {"jsonrpc": "2.0", "id": rid, "method": "ping", "params": {"origin_ns": self.clock(s)}},
+        )
+        if s.mode == "streaming":
+            for cid in s.channels:
+                await self._frame(s, cid)
 
     # ------------------------------------------------------------ time
 
@@ -837,6 +975,17 @@ class Harness:
                         "params": {"origin_ns": self.clock(s)},
                     },
                 )
+            if (
+                self.episode.malformed_frame
+                and not self.malformed_sent
+                and s.stream_ws is not None
+                and self.submitted
+            ):
+                self.malformed_sent = True
+                bad = bytearray(28)
+                bad[0:4], bad[4], bad[6] = b"AWPF", 2, 1  # version 2 (AWP-DAT-010)
+                with contextlib.suppress(ConnectionClosed):
+                    await s.stream_ws.send(bytes(bad))
             if s.mode != "streaming":
                 continue
             for cid, g in s.channels.items():
@@ -859,6 +1008,14 @@ class Harness:
             if now - s.last_telemetry >= 1_000 * MS:
                 s.last_telemetry = now
                 await self._note(s, "session.telemetry", {"window_ms": 1000})
+
+
+_SESSION_METHODS = frozenset(
+    m
+    for m in spec.METHODS
+    if m.split(".")[0] in ("action", "obs", "task", "world")
+    or m in ("session.resume", "session.close", "session.transfer")
+) - {"world.manifest", "obs.frame", "obs.report", "world.event"}
 
 
 def _oversized(value: Any) -> bool:

@@ -40,7 +40,9 @@ def rows(results: Results, scope: Scope) -> list[Row]:
         elif outcome is Outcome.UNTESTED:
             detail = results.untested_reason.get(req.id, "not exercised by this suite version")
         else:
-            detail = req.test
+            detail = req.test_for(scope.side)
+            if outcome is Outcome.MANUAL and req.id in results.untested_reason:
+                detail = f"{results.untested_reason[req.id]}; {detail}"
         out.append(Row(req, outcome, detail))
     return out
 

@@ -2,7 +2,7 @@
 
 The conformance suite for the [Agent World Protocol](https://www.agentworldprotocol.com). It tests a world at a WebSocket URL, or an agent launched against the suite's own harness world, against the [requirement matrix](https://www.agentworldprotocol.com/spec/requirements) of one specification revision, and reports a verdict per requirement ID.
 
-It targets specification revision **`0.1-draft.8`**, pinned as the `spec/` submodule. The suite shares no code with any implementation: it speaks the protocol from the bundled canonical schemas, lifecycle table, and matrix.
+It targets specification revision **`0.1-draft.9`**, pinned as the `spec/` submodule. The suite shares no code with any implementation: it speaks the protocol from the bundled canonical schemas, lifecycle table, and matrix.
 
 ```bash
 pip install --pre awp-conformance
@@ -46,13 +46,13 @@ A manifest declares action types but not which parameter values make an action r
 | `approval_action` | The action to submit for approval (default: the first such type, with empty params) |
 | `servo` | For command channels: `{ "action": {type, params}, "setpoint": {...}, "violation": {...} }` |
 
-Beyond Core, the suite tests what the world offers: the `ws` stream binding, task, approval, blend, transfer, seeding, snapshots and replay, and command channels. `--profile sim` adds the sim profile to the claim.
+Beyond Core, the suite tests what the world offers: the `ws` stream binding, task, approval and standing approvals, blend, transfer, seeding, snapshots and replay, and command channels. `--profile sim` adds the sim profile to the claim.
 
-`fixtures/awp-sim.json` is the fixture for the reference world.
+`fixtures/awp-sim.json` is the fixture for the reference world, and `fixtures/awp-sim-features.json` adds the approver token and servo entry for `awp-sim serve --features ... --approver-token awp-sim-approver`.
 
 ## Testing an agent
 
-`awp-conformance agent` serves the manifest you give it from a scripted harness world, launches the agent once per episode (`{url}` and `{token}` in the command, or `$AWP_URL` and `$AWP_TOKEN`), and checks what the agent sends. The episodes add the stimuli that make agent requirements observable: unknown fields on every message, reserved frame flag bits, a redelivered terminal status, an unknown world request, a dropped connection, a world that falls silent, an invalid manifest, a session with no action grants, and a refused submission.
+`awp-conformance agent` serves the manifest you give it from a scripted harness world, launches the agent once per episode (`{url}` and `{token}` in the command, or `$AWP_URL` and `$AWP_TOKEN`), and checks what the agent sends. The episodes add the stimuli that make agent requirements observable: unknown fields on every message, reserved frame flag bits, frames interleaved across channels, a redelivered terminal status, an unknown world request, world traffic between a request and its response, a pong before `session.ready` on another clock, a dropped connection, a world that has forgotten the session, a world that falls silent, an invalid manifest, a session with no action grants, and a refused submission. In streaming, seq gaps and a resync are checked against the agent's `obs.report`; in lockstep, stream frames follow the `world.tick` result, and the agent must wait for them.
 
 `--frames` gives a sample payload per channel, so the agent sees observations it can parse.
 

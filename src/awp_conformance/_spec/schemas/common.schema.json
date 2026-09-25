@@ -24,8 +24,8 @@
     "seq": { "$ref": "#/$defs/u53", "description": "Per-channel frame sequence number (AWP-DAT-001)." },
     "status_seq": { "$ref": "#/$defs/u53", "description": "Per-session notification sequence shared by action.status, world.event, and session.state (AWP-CTL-008)." },
     "session_id": { "type": "string", "minLength": 1, "maxLength": 128, "description": "World-assigned session identifier; not a credential (AWP-SES-009)." },
-    "session_state": { "type": "string", "enum": ["negotiating", "ready", "active", "suspended", "closed"] },
-    "channel_id": { "type": "integer", "minimum": 0, "maximum": 65535 },
+    "session_state": { "type": "string", "enum": ["ready", "active", "suspended", "closed"] },
+    "channel_id": { "type": "integer", "minimum": 1, "maximum": 65535, "description": "Channels ≥ 1; channel 0 is the control channel, which carries no frames (AWP-TRN-005)." },
     "channel_grant": {
       "description": "A granted channel subscription as enumerated in session.ready and obs.subscribe results (AWP-NEG-001).",
       "type": "object",
@@ -52,7 +52,7 @@
     "per_channel": {
       "description": "Object keyed by the decimal channel_id assigned in session.ready.",
       "type": "object",
-      "propertyNames": { "pattern": "^(0|[1-9][0-9]{0,4})$" }
+      "propertyNames": { "pattern": "^[1-9][0-9]{0,4}$" }
     },
     "identifier": {
       "description": "Names for channels, action types, embodiments, frames, entities.",

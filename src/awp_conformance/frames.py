@@ -67,6 +67,8 @@ def decode(data: bytes) -> Decoded:
     magic, version, flags, channel_id, seq, ts, payload_len = HEADER.unpack_from(data)
     if magic != b"AWPF" or version != 1:
         raise FrameError("AWP_MALFORMED", f"magic {magic!r} version {version}")
+    if flags & 0x08 and not flags & 0x01:
+        raise FrameError("AWP_MALFORMED", "resync without keyframe")
     offset = HEADER.size
     ext: dict[str, int] = {}
     vendor: list[tuple[int, bytes]] = []

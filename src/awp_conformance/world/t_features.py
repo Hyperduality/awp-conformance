@@ -177,7 +177,6 @@ async def approval(ctx: WorldContext) -> None:
     )
     if not (ctx.safety.get("audit") or {}).get("redact_paths"):
         ctx.na("AWP-APR-006", "no audit redact_paths declared")
-    ctx.results.mark_untested("AWP-APR-004", "standing approvals are optional and not detectable")
     timeout = ctx.safety.get("approval_timeout_ms", 60000)
     if not ctx.lockstep and timeout / 1000 > ctx.fixture.max_wait_s:
         ctx.results.mark_untested(
@@ -197,6 +196,127 @@ async def approval(ctx: WorldContext) -> None:
             "AWP-APR-003", s.get("reason") == "approval_timeout", f"undecided action ended {s}"
         )
     await ctx.settle(link)
+
+
+MS = 1_000_000
+
+
+@world_test("standing-approval", ["AWP-APR-004"], needs=_needs_approver)
+async def standing_approval(ctx: WorldContext) -> None:
+    spec = _approval_spec(ctx)
+    assert spec is not None
+    approver = await _approver(ctx)
+    link = await ctx.session("agent")
+    declared = bool(ctx.safety.get("standing_approvals"))
+    others = [d for d in ctx.decls if d != spec.type]
+
+    async def clock() -> int:
+        """The session clock: a pong carries it, in lockstep the current tick's (AWP-TIM-013)."""
+        pong = await link.call("ping", {"origin_ns": now_ns()})
+        return int(pong["receive_ns"])
+
+    async def request() -> tuple[str, dict[str, Any], dict[str, Any] | None]:
+        since = len(approver.notes)
+        action_id, reply = await ctx.submit(link, spec)
+
+        def mine() -> list[dict[str, Any]]:
+            return [r for r in _requests(approver, since) if r["action_id"] == action_id]
+
+        await approver.wait_for(lambda: bool(mine()), 1.0 if reply.ok else 0.0)
+        return action_id, reply.result or {}, next(iter(mine()), None)
+
+    async def respond(req: dict[str, Any], decision: str = "approve", **standing: Any) -> Any:
+        params: dict[str, Any] = {"approval_id": req["approval_id"], "decision": decision}
+        if standing:
+            params["standing"] = standing
+        return await approver.call("safety.approval.respond", params)
+
+    async def grant(req: dict[str, Any], lasting_ms: int, **scope: Any) -> dict[str, Any]:
+        return {
+            "scope": {"type": req["type"], **scope},
+            "expires_at_ns": await clock() + lasting_ms * MS,
+        }
+
+    first, _, req = await request()
+    if req is None:
+        ctx.check("AWP-APR-004", False, "no approval request for the first action")
+        return
+    bad = [("approve", await grant(req, 60_000))]
+    if declared:
+        other = others[0] if others else "conformance_other"
+        bad = [
+            ("deny", await grant(req, 60_000)),
+            ("approve", {**await grant(req, 60_000), "scope": {"type": other}}),
+            ("approve", await grant(req, 60_000, predicate={"type": 5})),
+        ]
+    for decision, standing in bad:
+        refused = await respond(req, decision, **standing)
+        ctx.check(
+            "AWP-APR-004",
+            refused.code == 3001 and ctx.state(link, first) == "pending_approval",
+            f"{decision} with standing {standing['scope']} answered "
+            f"{refused.error or refused.result}; the action is {ctx.state(link, first)}",
+        )
+    if not declared:
+        await respond(req, "deny")
+        await ctx.settle(link)
+        return
+    never = await grant(req, 60_000, predicate={"not": {}})
+    ctx.check("AWP-APR-004", (await respond(req, **never)).ok, "a standing approval was refused")
+    await ctx.wait_terminal(link, first)
+    _, admitted, req = await request()
+    ctx.check(
+        "AWP-APR-004",
+        admitted.get("state") == "pending_approval" and req is not None,
+        f"params outside the grant's predicate were admitted {admitted.get('state')}",
+    )
+    if req is None:
+        await ctx.settle(link)
+        return
+    lasting = 1_000 if ctx.lockstep else 2_000
+    window = await grant(req, lasting)
+    ctx.check("AWP-APR-004", (await respond(req, **window)).ok, "a standing approval was refused")
+    _, admitted, asked = await request()
+    ctx.check(
+        "AWP-APR-004",
+        admitted.get("state") in ("accepted", "queued") and asked is None,
+        f"a submission within the grant was admitted {admitted.get('state')}"
+        + (" and sent to the approver" if asked else ""),
+    )
+    ctx.check(
+        "AWP-APR-004",
+        admitted.get("approval_id") == req["approval_id"],
+        f"the admission names approval_id {admitted.get('approval_id')}, "
+        f"not the grant's {req['approval_id']}",
+    )
+    await ctx.settle(link)
+    for _ in range(400):
+        if await clock() > window["expires_at_ns"]:
+            break
+        if ctx.lockstep:
+            await ctx.advance(link, 5)
+        else:
+            await asyncio.sleep(0.1)
+    _, admitted, req = await request()
+    ctx.check(
+        "AWP-APR-004",
+        admitted.get("state") == "pending_approval" and req is not None,
+        f"a submission after the grant expired was admitted {admitted.get('state')}",
+    )
+    if req is not None:
+        await respond(req, "deny")
+    await ctx.settle(link)
+    if ctx.fixture.audit_dir:
+        session_id = link.tracker.session_id or ""
+        await ctx.close(link)
+        await asyncio.sleep(0.3)
+        files = await asyncio.to_thread(_audit_files, Path(ctx.fixture.audit_dir), session_id)
+        text = "".join([await asyncio.to_thread(f.read_text) for f in files])
+        ctx.check(
+            "AWP-APR-004",
+            '"standing"' in text and window["scope"]["type"] in text,
+            f"the standing approval is missing from session {session_id}'s audit log",
+        )
 
 
 # ---------------------------------------------------------------- blend
