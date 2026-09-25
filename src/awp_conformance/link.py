@@ -185,8 +185,11 @@ class Link:
 
     async def _stop_tasks(self) -> None:
         for t in self._tasks:
-            t.cancel()
-        for t in self._tasks:
+            # On Python 3.11, wait_for swallows a cancellation that races its result, so a
+            # task may need cancelling again.
+            while not t.done():
+                t.cancel()
+                await asyncio.wait({t}, timeout=0.1)
             with contextlib.suppress(asyncio.CancelledError, Exception):
                 await t
         self._tasks = []
