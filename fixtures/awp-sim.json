@@ -102,5 +102,26 @@
     "estop_release": "kill -USR2 $AWP_SIM_PID"
   },
   "audit_dir": "awp-audit",
-  "max_wait_s": 45
+  "max_wait_s": 45,
+  "approver_token": "conformance-approver",
+  "servo": {
+    "action": {
+      "type": "servo",
+      "params": {}
+    },
+    "setpoint": {
+      "v_mps": [
+        0.05,
+        0.0,
+        0.0
+      ]
+    },
+    "violation": {
+      "v_mps": [
+        2.0,
+        0.0,
+        0.0
+      ]
+    }
+  }
 }

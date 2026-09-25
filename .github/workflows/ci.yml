@@ -25,12 +25,22 @@ jobs:
       - run: uv run pytest
 
   reference-world:
-    name: awp-sim through the CLI (${{ matrix.mode }})
+    name: awp-sim through the CLI (${{ matrix.name }})
     runs-on: ubuntu-latest
     strategy:
       fail-fast: false
       matrix:
-        mode: [streaming, lockstep]
+        include:
+          - { name: streaming, mode: streaming, serve: "", claim: "" }
+          - { name: lockstep, mode: lockstep, serve: "", claim: "" }
+          - name: streaming, every feature, ws stream
+            mode: streaming
+            serve: --features task,approval,blend,transfer,servo --stream-binding ws --approver-token conformance-approver --approval-timeout-ms 3000
+            claim: ""
+          - name: lockstep, every feature, sim profile
+            mode: lockstep
+            serve: --features task,approval,blend,transfer,sim --approver-token conformance-approver --approval-timeout-ms 3000
+            claim: --profile sim
     steps:
       - uses: actions/checkout@v7
         with:
@@ -40,16 +50,16 @@ jobs:
       - name: serve awp-sim and run the suite against it
         run: |
           mkdir -p run && cd run
-          uv run awp-sim serve --mode ${{ matrix.mode }} --port 8710 \
+          uv run awp-sim serve --mode ${{ matrix.mode }} --port 8710 ${{ matrix.serve }} \
             --watchdog-ms 800 --heartbeat-ms 500 --reconnect-window-ms 4000 &
           export AWP_SIM_PID=$!
           sleep 2
           sed 's#"audit_dir": "awp-audit"#"audit_dir": "'"$PWD"'/awp-audit"#' ../fixtures/awp-sim.json > fixture.json
-          uv run awp-conformance world ws://127.0.0.1:8710 --fixture fixture.json --out report
+          uv run awp-conformance world ws://127.0.0.1:8710 --fixture fixture.json ${{ matrix.claim }} --out report
       - uses: actions/upload-artifact@v7
         if: always()
         with:
-          name: report-${{ matrix.mode }}
+          name: report-${{ strategy.job-index }}
           path: run/report/
 
   build:

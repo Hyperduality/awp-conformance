@@ -32,21 +32,13 @@ REFUSED_WHILE_CLOSING = frozenset(
         "session.resume",
     }
 )
+# The event registry (AWP-EVT-001), from the bundled world-event schema.
 EVENT_REGISTRY = frozenset(
-    {
-        "entity_appeared",
-        "entity_removed",
-        "collision",
-        "e_stop_engaged",
-        "e_stop_released",
-        "envelope_violation",
-        "grant_expired",
-        "safe_state_entered",
-        "safe_state_exited",
-        "channel_degraded",
-        "world_resetting",
-        "world_shutdown",
-    }
+    next(
+        alt["enum"]
+        for alt in spec.SCHEMAS["world-event"]["properties"]["event"]["anyOf"]
+        if "enum" in alt
+    )
 )
 REASON_REQUIRED = frozenset({"rejected", "failed", "cancelled"})
 JSON_MODALITIES = ("text/event+json", "proprio/json", "servo/json")
@@ -108,6 +100,9 @@ class ChannelView:
     frames: int = 0
     need_resync: bool = False
     fresh: bool = True  # the next frame is the first of a subscription
+    binding: str = "inline"
+    stream_since_ns: int | None = None  # when the channel's first stream frame arrived
+    command: bool = False  # agent→world: no frames arrive on it (AWP-CMD-002)
 
 
 class SessionTracker:
@@ -117,6 +112,7 @@ class SessionTracker:
         self.manifest = manifest
         self.mode = mode
         self.channels_by_name = {c["id"]: c for c in manifest.get("observation_channels", [])}
+        self.command_channels = {c["id"]: c for c in manifest.get("command_channels", [])}
         self.consumes: set[str] | None = None
 
         self.ready: dict[str, Any] | None = None
@@ -240,6 +236,9 @@ class SessionTracker:
             self.next_seq = last_status_seq + 1
             for ch in self.channels.values():
                 ch.need_resync = ch.loss_class == "reliable"
+                ch.stream_since_ns = (
+                    None  # inline again until streams are re-established (AWP-TRN-008)
+                )
         else:
             self.next_seq = 1
 
@@ -247,7 +246,8 @@ class SessionTracker:
         current = {c.channel_id: c for c in self.channels.values()}
         self.channels = {}
         for g in grants:
-            declared = self.channels_by_name.get(g.get("channel", ""), {})
+            name = g.get("channel", "")
+            declared = self.channels_by_name.get(name) or self.command_channels.get(name, {})
             cid = g.get("channel_id")
             if not isinstance(cid, int):
                 continue
@@ -261,6 +261,7 @@ class SessionTracker:
                 loss_class=declared.get("loss_class", "reliable"),
                 modality=declared.get("modality", ""),
                 schema=declared.get("schema"),
+                command=name in self.command_channels,
             )
         self.expect(
             "AWP-TRN-005",
@@ -366,15 +367,35 @@ class SessionTracker:
         if p["state"] == "executing":
             a.executed = True
 
-    def on_frame(self, p: dict[str, Any]) -> None:
+    def observation_channels(self) -> dict[int, ChannelView]:
+        return {cid: c for cid, c in self.channels.items() if not c.command}
+
+    def on_frame(self, p: dict[str, Any], binding: str = "inline") -> None:
         cid = p["channel_id"]
-        ch = self.channels.get(cid)
+        ch = self.observation_channels().get(cid)
         if not self.expect("AWP-TRN-005", ch is not None, f"frame on ungranted channel {cid}"):
             return
         assert ch is not None
+        if binding != "inline" and ch.stream_since_ns is None:  # the channel moves here
+            self.expect(
+                "AWP-TRN-012",
+                p["flags"] & 0x09 == 0x09,
+                f"{ch.name}: first frame on the stream connection is not a resync keyframe",
+            )
+            ch.stream_since_ns = time.monotonic_ns()
+        elif binding == "inline" and ch.stream_since_ns is not None:
+            # Once moved, only frames in flight at the move may still arrive inline.
+            late = (time.monotonic_ns() - ch.stream_since_ns) / 1e6
+            self.expect(
+                "AWP-TRN-012", late < 300, f"{ch.name}: inline {late:.0f} ms after it moved"
+            )
+            if ch.last_seq is not None and p["seq"] <= ch.last_seq:
+                return  # overtaken on the connection the channel moved to: discarded, not loss
+        ch.binding = binding
         flags = p["flags"]
-        self.expect("AWP-DAT-004", not flags & 0x04, f"{ch.name}: inline flags bit 2 set")
-        self.expect("AWP-DAT-005", not flags & 0xF0, f"{ch.name}: reserved flag bits set")
+        if binding == "inline":
+            self.expect("AWP-DAT-004", not flags & 0x04, f"{ch.name}: inline flags bit 2 set")
+            self.expect("AWP-DAT-005", not flags & 0xF0, f"{ch.name}: reserved flag bits set")
         resync = bool(flags & 0x08)
         if resync:
             self.expect(
@@ -397,7 +418,7 @@ class SessionTracker:
             self.expect("AWP-DAT-001", ordered, f"{ch.name}: seq {seq} after {ch.last_seq}")
             for requirement in ("AWP-OBS-003", "AWP-TRN-007"):
                 self.expect(requirement, ordered, f"{ch.name}: frames reordered")
-            if ch.loss_class == "reliable" and seq != ch.last_seq + 1:
+            if ch.loss_class == "reliable" and seq > ch.last_seq + 1:
                 self.expect("AWP-DAT-001", resync, f"{ch.name}: reliable seq gap without resync")
         if ch.last_ts is not None:
             self.expect(
@@ -523,7 +544,7 @@ class SessionTracker:
             self.closing = False
         elif method == "world.tick" and result is not None:
             self.tick = result.get("tick", self.tick)
-        elif method == "world.reset" and result is not None and "tick" in result:
+        elif method in ("world.reset", "world.restore") and result is not None and "tick" in result:
             self.tick = result["tick"]
         elif method in ("obs.subscribe", "obs.unsubscribe") and result is not None:
             before = set(self.channels)

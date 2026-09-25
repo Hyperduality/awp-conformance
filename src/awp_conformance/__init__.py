@@ -6,7 +6,7 @@ the requirement matrix of the specification revision in `SPEC_REVISION`.
 
 from importlib.metadata import PackageNotFoundError, version
 
-SPEC_REVISION = "0.1-draft.6"
+SPEC_REVISION = "0.1-draft.7"
 
 try:
     __version__ = version("awp-conformance")

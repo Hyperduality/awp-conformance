@@ -1,5 +1,7 @@
 from __future__ import annotations
 
+import pytest
+
 from awp_conformance import spec
 from awp_conformance.report import build
 from awp_conformance.results import Outcome, Results
@@ -10,6 +12,39 @@ def test_matrix_is_bundled():
     assert len(spec.REQUIREMENTS) > 200
     assert spec.REQUIREMENTS["AWP-ACT-001"].level == "MUST"
     assert spec.REQUIREMENTS["AWP-LIF-003"].kind == "warning"
+
+
+def test_frame_decoder_matches_every_vector():
+    import json
+    from importlib.resources import files
+
+    from awp_conformance.frames import FrameError, decode
+
+    vectors = json.loads((files("awp_conformance") / "_spec" / "frames.json").read_text())[
+        "vectors"
+    ]
+    for v in vectors:
+        data = bytes.fromhex(v["hex"])
+        if v.get("expect_error"):
+            with pytest.raises(FrameError) as err:
+                decode(data)
+            assert err.value.code == v["expect_error"], v["name"]
+            continue
+        f = decode(data)
+        got = {
+            "channel_id": f.channel_id,
+            "seq": f.seq,
+            "ts_mono_ns": f.ts_mono_ns,
+            "flags": f.flags,
+            "keyframe": f.keyframe,
+            "end_of_burst": bool(f.flags & 0x02),
+            "resync": f.resync,
+            "payload_len": len(f.payload),
+            "payload_hex": f.payload.hex(),
+            "vendor": [{"type": k, "value": list(b)} for k, b in f.vendor],
+            **f.ext,
+        }
+        assert {k: got[k] for k in v["expect"]} == v["expect"], v["name"]
 
 
 def test_transition_table():

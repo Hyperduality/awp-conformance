@@ -4,6 +4,7 @@ from __future__ import annotations
 
 from typing import Any
 
+import pytest
 from awp.errors import AwpError, ErrorCode
 from awp.lifecycle import ActionState
 
@@ -90,3 +91,83 @@ async def test_catches_a_cancel_without_safe_abort(streaming_sim):
     world._rpc_action_cancel = instant_cancel
     run = await run_world(server.url, sim_fixture(), only=["cancel-executing"])
     assert "AWP-LIF-005" in failures(run)
+
+
+STREAM_TESTS = ["session-open", "ws-stream", "lifecycle-complete", "resume-replay", "watchdog"]
+
+
+async def test_ws_stream_binding_passes(stream_sim):
+    server, audit = stream_sim
+    run = await run_world(server.url, sim_fixture(audit), only=STREAM_TESTS)
+    assert failures(run) == {}
+    passed = {f.requirement for f in run.results.findings if f.ok}
+    assert {"AWP-TRN-010", "AWP-TRN-012", "AWP-TRN-013", "AWP-DAT-006"} <= passed
+
+
+async def test_catches_a_channel_that_stays_inline_after_moving(stream_sim):
+    server, _ = stream_sim
+    world = server.world
+
+    def emit(s, g, now):  # every frame inline as well as on the stream connection
+        stream, resync = s.stream_conn, g.resync
+        s.stream_conn = None
+        try:
+            type(world)._emit_frame(world, s, g, now)
+        finally:
+            s.stream_conn = stream
+        if stream is not None:
+            g.seq -= 1
+            g.resync = resync  # the stream copy is the one the rules are about
+            type(world)._emit_frame(world, s, g, now)
+
+    world._emit_frame = emit
+    run = await run_world(server.url, sim_fixture(), only=["ws-stream"])
+    assert "AWP-TRN-012" in failures(run)
+
+
+FEATURE_TESTS = [
+    "manifest",
+    "task",
+    "approval",
+    "blend",
+    "transfer",
+    "seeding",
+    "snapshot-restore",
+    "command-channel",
+    "ws-stream",
+]
+
+
+@pytest.mark.parametrize("mode", ["streaming", "lockstep"])
+async def test_features_beyond_core_pass(tmp_path, mode):
+    from .conftest import APPROVER, featured
+
+    server = await featured(mode, tmp_path / "audit")
+    try:
+        fixture = sim_fixture(tmp_path / "audit")
+        fixture.approver_token = APPROVER
+        fixture.servo = {
+            "action": {"type": "servo", "params": {}},
+            "setpoint": {"v_mps": [0.05, 0.0, 0.0]},
+            "violation": {"v_mps": [2.0, 0.0, 0.0]},
+        }
+        run = await run_world(server.url, fixture, only=FEATURE_TESTS)
+    finally:
+        await server.stop()
+    assert failures(run) == {}
+    passed = {f.requirement for f in run.results.findings if f.ok}
+    common = {
+        "AWP-TSK-001",
+        "AWP-TSK-002",
+        "AWP-APR-001",
+        "AWP-APR-002",
+        "AWP-APR-007",
+        "AWP-PRE-004",
+        "AWP-EMB-003",
+    }
+    specific = (
+        {"AWP-CMD-003", "AWP-CMD-005", "AWP-TRN-012"}
+        if mode == "streaming"
+        else {"AWP-REP-001", "AWP-REP-002", "AWP-REP-003"}
+    )
+    assert common | specific <= passed

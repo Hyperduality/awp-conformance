@@ -40,6 +40,9 @@ class Fixture:
     operator: dict[str, str] = field(default_factory=dict)
     audit_dir: str | None = None
     max_wait_s: float = 45.0
+    approver_token: str | None = None
+    approval_action: ActionSpec | None = None
+    servo: dict[str, Any] | None = None  # {action, setpoint, violation?} for command channels
 
     @classmethod
     def load(cls, path: Path | str) -> Fixture:
@@ -64,6 +67,9 @@ class Fixture:
             operator=dict(raw.get("operator", {})),
             audit_dir=raw.get("audit_dir"),
             max_wait_s=float(raw.get("max_wait_s", 45.0)),
+            approver_token=raw.get("approver_token"),
+            approval_action=spec("approval_action"),
+            servo=raw.get("servo"),
         )
 
     def problems(self, manifest: dict[str, Any]) -> list[str]:

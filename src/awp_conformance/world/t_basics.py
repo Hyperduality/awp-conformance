@@ -189,6 +189,8 @@ async def unknown_methods(ctx: WorldContext) -> None:
         )
     caps = ctx.manifest.get("capabilities") or {}
     gated = {"task": "task.update", "snapshot": "world.snapshot"}
+    if all(caps.get(key) for key in gated):
+        ctx.na("AWP-VER-007", "every capability with a gated method is advertised")
     for key, method in gated.items():
         if caps.get(key):
             continue
@@ -288,13 +290,16 @@ async def session_open(ctx: WorldContext) -> None:
         "AWP-SES-009", r.get("session_id") != r.get("session_token"), "session_id is the token"
     )
     granted = r.get("granted", {})
-    names = [g["channel"] for g in granted.get("channels", [])]
+    commands = {c["id"] for c in ctx.manifest.get("command_channels", [])}
+    names = [g["channel"] for g in granted.get("channels", []) if g["channel"] not in commands]
     ctx.check(
         "AWP-NEG-001",
         sorted(names) == sorted(ctx.channels),
         f"granted {names}, asked {ctx.channels}",
     )
     for g in granted.get("channels", []):
+        if g["channel"] in commands:
+            continue
         decl = declared.get(g["channel"], {})
         if decl.get("rate_hz") is None:
             ctx.check("AWP-NEG-003", g["rate_hz"] is None, f"{g['channel']}: per-tick channel rate")
@@ -369,12 +374,12 @@ async def session_open(ctx: WorldContext) -> None:
     if ctx.lockstep:
         tick = r.get("tick")
         ctx.check("AWP-TIM-009", isinstance(tick, int), "lockstep session.ready carries tick")
-        for ch in link.tracker.channels.values():
+        for ch in link.tracker.observation_channels().values():
             ctx.check(
                 "AWP-TIM-009", ch.frames >= 1, f"{ch.name}: no initial frame after session.ready"
             )
     else:
-        for ch in link.tracker.channels.values():
+        for ch in link.tracker.observation_channels().values():
             ctx.check(
                 "AWP-OBS-005", ch.frames >= 1, f"{ch.name}: no frame within 3 s of subscribing"
             )
@@ -517,7 +522,8 @@ async def subscriptions(ctx: WorldContext) -> None:
         )
     if rest:
         reply = await link.call("obs.subscribe", {"channels": [{"channel": rest[0]}]})
-        got = sorted(g["channel"] for g in reply.get("granted", []))
+        commands = {c["id"] for c in ctx.manifest.get("command_channels", [])}
+        got = sorted(g["channel"] for g in reply.get("granted", []) if g["channel"] not in commands)
         ctx.check("AWP-NEG-004", got == sorted([first, rest[0]]), f"subscribe returned {got}")
         await ctx.initial_frames(link)
     reply = await link.call("obs.unsubscribe", {"channels": [first]})

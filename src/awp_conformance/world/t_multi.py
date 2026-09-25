@@ -63,11 +63,11 @@ async def reset(ctx: WorldContext) -> None:
         def fresh() -> list[dict[str, Any]]:
             return [m for _, m in a.notes[before_a:] if m.get("method") == "obs.frame"]
 
-        await a.wait_for(lambda: len(fresh()) >= len(a.tracker.channels), 2.0)
+        await a.wait_for(lambda: len(fresh()) >= len(a.tracker.observation_channels()), 2.0)
         ticks = {m["params"].get("tick") for m in fresh()}
         ctx.check(
             "AWP-PRM-006",
-            len(fresh()) >= len(a.tracker.channels) and ticks == {a.tracker.tick},
+            len(fresh()) >= len(a.tracker.observation_channels()) and ticks == {a.tracker.tick},
             f"{len(fresh())} fresh frames after reset, ticks {ticks}, current {a.tracker.tick}",
         )
     pong = await b.ping()
