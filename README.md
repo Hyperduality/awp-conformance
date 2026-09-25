@@ -2,7 +2,7 @@
 
 The conformance suite for the [Agent World Protocol](https://www.agentworldprotocol.com). It tests a world at a WebSocket URL, or an agent launched against the suite's own harness world, against the [requirement matrix](https://www.agentworldprotocol.com/spec/requirements) of one specification revision, and reports a verdict per requirement ID.
 
-It targets specification revision **`0.1-draft.6`**, pinned as the `spec/` submodule. The suite shares no code with any implementation: it speaks the protocol from the bundled canonical schemas, lifecycle table, and matrix.
+It targets specification revision **`0.1-draft.7`**, pinned as the `spec/` submodule. The suite shares no code with any implementation: it speaks the protocol from the bundled canonical schemas, lifecycle table, and matrix.
 
 ```bash
 pip install awp-conformance
@@ -41,6 +41,11 @@ A manifest declares action types but not which parameter values make an action r
 | `operator` | Shell commands that engage and release the e-stop |
 | `audit_dir` | Where the world writes its audit log, if the suite can read it |
 | `max_wait_s` | The longest single wait the suite does (default 45); `--slow` lifts it |
+| `approver_token` | Bearer token of an approver connection, for worlds with `requires_approval` types |
+| `approval_action` | The action to submit for approval (default: the first such type, with empty params) |
+| `servo` | For command channels: `{ "action": {type, params}, "setpoint": {...}, "violation": {...} }` |
+
+Beyond Core, the suite tests what the world offers: the `ws` stream binding, task, approval, blend, transfer, seeding, snapshots and replay, and command channels. `--profile sim` adds the sim profile to the claim.
 
 `fixtures/awp-sim.json` is the fixture for the reference world.
 
