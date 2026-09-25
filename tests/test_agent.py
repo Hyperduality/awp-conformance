@@ -22,9 +22,21 @@ async def test_demo_agent_passes_in_streaming():
     run = await run_agent(DEMO, manifest, modes=["streaming"], samples=SAMPLES, timeout=15)
     bad = [f for f in run.results.findings if not f.ok and not f.should]
     assert bad == []
-    assert {"AWP-AGT-002", "AWP-AGT-003", "AWP-SAF-002", "AWP-CLK-009"} <= {
-        f.requirement for f in run.results.findings if f.ok
-    }
+    assert {
+        "AWP-AGT-002",
+        "AWP-AGT-003",
+        "AWP-AGT-007",
+        "AWP-CTL-003",
+        "AWP-CTL-005",
+        "AWP-DAT-001",
+        "AWP-DAT-009",
+        "AWP-OBS-003",
+        "AWP-SAF-002",
+        "AWP-SES-008",
+        "AWP-SES-012",
+        "AWP-CLK-009",
+    } <= {f.requirement for f in run.results.findings if f.ok}
+    assert run.results.untested_reason == {}
 
 
 async def test_demo_agent_passes_in_lockstep():
@@ -32,7 +44,86 @@ async def test_demo_agent_passes_in_lockstep():
     run = await run_agent(DEMO, manifest, modes=["lockstep"], samples=SAMPLES, timeout=15)
     bad = [f for f in run.results.findings if not f.ok and not f.should]
     assert bad == []
-    assert "AWP-AGT-009" in {f.requirement for f in run.results.findings if f.ok}
+    assert {"AWP-AGT-009", "AWP-TIM-003", "AWP-SES-008"} <= {
+        f.requirement for f in run.results.findings if f.ok
+    }
+
+
+def patched(code: str) -> list[str]:
+    """The demo agent with part of the client replaced, to check that the suite notices."""
+    run = "import sys; from awp_sim.cli import main; sys.exit(main(sys.argv[1:]))"
+    return [sys.executable, "-c", f"{code}\n{run}", "demo", "--url", "{url}", "--token", "{token}"]
+
+
+async def test_catches_an_agent_that_counts_the_gap_before_a_resync():
+    code = """
+import dataclasses
+from awp.client import ClientConnection
+frame = ClientConnection._frame
+ClientConnection._frame = lambda self, f, *a: frame(self, dataclasses.replace(f, resync=False), *a)
+"""
+    manifest = WorldConfig(mode="streaming").manifest()
+    run = await run_agent(patched(code), manifest, modes=["streaming"], samples=SAMPLES, timeout=15)
+    assert "AWP-DAT-009" in {f.requirement for f in run.results.findings if not f.ok}
+
+
+async def test_catches_an_agent_that_advances_before_the_frames_arrive():
+    code = """
+from awp.aio import AsyncClient
+async def advance(self, count=None, timeout=10.0):
+    return int((await self.call(self.conn.advance(count), timeout))["tick"])
+AsyncClient.advance = advance
+"""
+    manifest = WorldConfig(mode="lockstep").manifest()
+    run = await run_agent(patched(code), manifest, modes=["lockstep"], samples=SAMPLES, timeout=15)
+    assert "AWP-TIM-003" in {f.requirement for f in run.results.findings if not f.ok}
+
+
+async def test_catches_an_agent_that_keeps_a_lost_session():
+    code = """
+from awp.aio import AsyncClient
+from awp.client import ClientConnection
+from awp.errors import AwpError
+ClientConnection._session_lost = lambda self, *args: None
+reconnect = AsyncClient.reconnect
+async def resumed_anyway(self):
+    try:
+        return await reconnect(self)
+    except AwpError:
+        return {}
+AsyncClient.reconnect = resumed_anyway
+"""
+    manifest = WorldConfig(mode="lockstep").manifest()
+    run = await run_agent(patched(code), manifest, modes=["lockstep"], samples=SAMPLES, timeout=15)
+    assert "AWP-SES-008" in {f.requirement for f in run.results.findings if not f.ok}
+
+
+async def test_catches_an_agent_that_drops_the_connection_on_an_out_of_range_integer():
+    code = """
+from awp.aio import AsyncClient
+async def just_close(self):
+    await self._ws.close()
+AsyncClient._integer_range = just_close
+"""
+    manifest = WorldConfig(mode="streaming").manifest()
+    run = await run_agent(patched(code), manifest, modes=["streaming"], samples=SAMPLES, timeout=15)
+    assert "AWP-CTL-009" in {f.requirement for f in run.results.findings if not f.ok}
+
+
+async def test_catches_an_agent_that_keeps_a_stream_after_a_malformed_frame():
+    code = """
+from awp.client import ClientConnection
+receive = ClientConnection.receive_frame
+def tolerant(self, data):
+    try:
+        return receive(self, data)
+    except Exception:
+        return []
+ClientConnection.receive_frame = tolerant
+"""
+    manifest = WorldConfig(mode="streaming").manifest()
+    run = await run_agent(patched(code), manifest, modes=["streaming"], samples=SAMPLES, timeout=15)
+    assert "AWP-DAT-010" in {f.requirement for f in run.results.findings if not f.ok}
 
 
 def test_fixture_matches_the_reference_manifest():
