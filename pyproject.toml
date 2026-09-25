@@ -4,7 +4,7 @@ build-backend = "hatchling.build"
 
 [project]
 name = "awp-conformance"
-version = "0.1.0a2"
+version = "0.1.0a3"
 description = "Conformance suite for the Agent World Protocol: tests any world or agent against the requirement matrix."
 readme = "README.md"
 license = "Apache-2.0"
