@@ -1,4 +1,4 @@
-"""The agent suite against the reference client's demo agent."""
+"""The agent suite against awp-python's demo agent."""
 
 from __future__ import annotations
 
@@ -10,7 +10,7 @@ from awp_sim.config import WorldConfig
 
 from awp_conformance.agent.runner import run_agent
 
-DEMO = [sys.executable, "-m", "awp_sim", "demo", "--url", "{url}", "--token", "{token}"]
+DEMO = [sys.executable, "-m", "awp.demo", "--url", "{url}", "--token", "{token}"]
 SAMPLES = {
     "proprio": {"p_m": [0, 0, 0.4], "v_mps": [0, 0, 0]},
     "arm_state": {"phase": "idle", "target_m": None, "action_id": None},
@@ -51,8 +51,8 @@ async def test_demo_agent_passes_in_lockstep():
 
 def patched(code: str) -> list[str]:
     """The demo agent with part of the client replaced, to check that the suite notices."""
-    run = "import sys; from awp_sim.cli import main; sys.exit(main(sys.argv[1:]))"
-    return [sys.executable, "-c", f"{code}\n{run}", "demo", "--url", "{url}", "--token", "{token}"]
+    run = "import sys; from awp.demo import main; sys.exit(main(sys.argv[1:]))"
+    return [sys.executable, "-c", f"{code}\n{run}", "--url", "{url}", "--token", "{token}"]
 
 
 async def test_catches_an_agent_that_counts_the_gap_before_a_resync():

@@ -90,7 +90,7 @@ dependencies = [
 
 [package.dev-dependencies]
 dev = [
-    { name = "awp-python" },
+    { name = "awp-sim" },
     { name = "mypy" },
     { name = "pytest" },
     { name = "pytest-asyncio" },
@@ -108,7 +108,7 @@ requires-dist = [
 
 [package.metadata.requires-dev]
 dev = [
-    { name = "awp-python", git = "https://github.com/Hyperduality/awp-python?branch=main" },
+    { name = "awp-sim", git = "https://github.com/Hyperduality/awp-sim?branch=main" },
     { name = "mypy", specifier = ">=1.13" },
     { name = "pytest", specifier = ">=8.3" },
     { name = "pytest-asyncio", specifier = ">=0.24" },
@@ -120,9 +120,19 @@ dev = [
 
 [[package]]
 name = "awp-python"
-version = "0.1.0a3"
-source = { git = "https://github.com/Hyperduality/awp-python?branch=main#c8a1df1615448c5f42c3097efe747557aaf69c3e" }
+version = "0.1.0a4"
+source = { git = "https://github.com/Hyperduality/awp-python?branch=main#27e619c8b36e2f157d563d602a3fa47560c02cd5" }
 dependencies = [
+    { name = "jsonschema" },
+    { name = "websockets" },
+]
+
+[[package]]
+name = "awp-sim"
+version = "0.1.0a4"
+source = { git = "https://github.com/Hyperduality/awp-sim?branch=main#5a133846669167396c7de05ceb7d4f940a69bbf3" }
+dependencies = [
+    { name = "awp-python" },
     { name = "jsonschema" },
     { name = "websockets" },
 ]
