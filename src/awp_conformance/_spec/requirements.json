@@ -712,12 +712,12 @@
  {
   "id": "AWP-DAT-002",
   "side": "both",
-  "applies": "all",
-  "gate": "core",
+  "applies": "streaming",
+  "gate": "core (streaming)",
   "test": "manual: needs control of transport backpressure; attach the sender's drop policy and a stalled-receiver test",
   "level": "MUST",
   "page": "/spec/transport/frames",
-  "text": "Channels declare their class in the manifest as `loss_class` (AWP-TRN-006): `reliable` (no loss permitted) or `latest-wins` (droppable; senders\u2026"
+  "text": "Channels declare their class in the manifest as `loss_class` (AWP-TRN-006): `reliable` (no loss permitted) or `latest-wins` (droppable). In\u2026"
  },
  {
   "id": "AWP-DAT-003",
@@ -2237,7 +2237,7 @@
   "test": "manual: review of field names and units in the manifest and payload schemas",
   "level": "MUST",
   "page": "/spec/semantics/units-and-frames",
-  "text": "All physical quantities use SI units. Field names carry unit suffixes: `_m`, `_rad`, `_s`, `_ns`, `_mps`, `_radps`, `_n` (newtons), `_nm`\u2026"
+  "text": "All physical quantities use SI units. Field names carry unit suffixes: `_m`, `_rad`, `_s`, `_ms`, `_ns`, `_mps`, `_radps`, `_n` (newtons), `_nm`\u2026"
  },
  {
   "id": "AWP-UNI-002",
@@ -2357,6 +2357,6 @@
   "test": "manual: the implementation's documentation and the conformance report name the draft revision",
   "level": "MUST",
   "page": "/spec/versioning-policy",
-  "text": "Implementations and conformance reports MUST name the draft revision they target (e.g. \"self-assessed against 0.1-draft.6\"); `\"0.1\"` alone does\u2026"
+  "text": "Implementations and conformance reports MUST name the draft revision they target (e.g. \"self-assessed against 0.1-draft.8\"); `\"0.1\"` alone does\u2026"
  }
 ]

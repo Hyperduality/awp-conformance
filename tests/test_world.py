@@ -76,6 +76,19 @@ async def test_catches_a_missing_watchdog(streaming_sim):
     assert "AWP-SAF-003" in failures(run)
 
 
+async def test_catches_an_unenforced_max_duration(streaming_sim):
+    server, _ = streaming_sim
+    world = server.world
+    admit = world._admit
+
+    def declared_only(*args):
+        return {k: v for k, v in admit(*args).items() if k != "max_duration_ms"}
+
+    world._admit = declared_only
+    run = await run_world(server.url, sim_fixture(), only=["max-duration"])
+    assert "AWP-ACT-008" in failures(run)
+
+
 async def test_catches_a_cancel_without_safe_abort(streaming_sim):
     server, _ = streaming_sim
     world = server.world

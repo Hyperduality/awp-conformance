@@ -2,7 +2,7 @@
 
 The conformance suite for the [Agent World Protocol](https://www.agentworldprotocol.com). It tests a world at a WebSocket URL, or an agent launched against the suite's own harness world, against the [requirement matrix](https://www.agentworldprotocol.com/spec/requirements) of one specification revision, and reports a verdict per requirement ID.
 
-It targets specification revision **`0.1-draft.7`**, pinned as the `spec/` submodule. The suite shares no code with any implementation: it speaks the protocol from the bundled canonical schemas, lifecycle table, and matrix.
+It targets specification revision **`0.1-draft.8`**, pinned as the `spec/` submodule. The suite shares no code with any implementation: it speaks the protocol from the bundled canonical schemas, lifecycle table, and matrix.
 
 ```bash
 pip install --pre awp-conformance
@@ -36,6 +36,7 @@ A manifest declares action types but not which parameter values make an action r
 | Key | Meaning |
 |---|---|
 | `moves` | Three or more extended actions in one concurrency group, at targets not on one line, each lasting at least `extended_min_ms` (streaming) or `extended_min_ticks` advances (lockstep). The suite always picks a target the embodiment is not near |
+| `long_params` | Params merged into a move so that it outlasts its type's `max_duration_ms`, for AWP-ACT-008 when the moves end sooner |
 | `invalid` | Params that fail the type's schema (generated from the schema when absent) |
 | `outside_envelope` | Params outside a declared envelope |
 | `operator` | Shell commands that engage and release the e-stop |

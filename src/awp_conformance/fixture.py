@@ -32,6 +32,8 @@ class Fixture:
     moves: list[ActionSpec] = field(default_factory=list)
     extended_min_ms: int = 600
     extended_min_ticks: int = 5
+    # Params merged into a move so that it outlasts its type's `max_duration_ms` (AWP-ACT-008).
+    long_params: dict[str, Any] | None = None
     instant: ActionSpec | None = None
     invalid: ActionSpec | None = None
     outside_envelope: ActionSpec | None = None
@@ -60,6 +62,7 @@ class Fixture:
             moves=[ActionSpec.load(m) for m in raw.get("moves", [])],
             extended_min_ms=int(raw.get("extended_min_ms", 600)),
             extended_min_ticks=int(raw.get("extended_min_ticks", 5)),
+            long_params=raw.get("long_params"),
             instant=spec("instant"),
             invalid=spec("invalid"),
             outside_envelope=spec("outside_envelope"),

@@ -65,6 +65,9 @@
   ],
   "extended_min_ms": 1500,
   "extended_min_ticks": 20,
+  "long_params": {
+    "max_velocity_mps": 0.01
+  },
   "instant": {
     "type": "stop",
     "params": {}

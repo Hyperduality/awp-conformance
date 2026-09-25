@@ -250,11 +250,12 @@ class WorldContext:
                     seen.add(id(a))
 
     def _index(self, a: ActionView) -> int | None:
+        if not a.content:
+            return None
         for i, m in enumerate(self.moves()):
-            if (
-                a.content
-                and m.type == a.content.get("type")
-                and m.params == a.content.get("params")
+            if m.type == a.content.get("type") and a.content.get("params") in (
+                m.params,
+                self.long(m).params,
             ):
                 return i
         return None
@@ -294,6 +295,10 @@ class WorldContext:
         ]
         self._turn += 1
         return moves[choices[self._turn % len(choices)]]
+
+    def long(self, move: ActionSpec) -> ActionSpec:
+        """`move` with the fixture's `long_params` merged in."""
+        return ActionSpec(move.type, {**move.params, **(self.fixture.long_params or {})})
 
     def invalid_params(self) -> ActionSpec:
         if self.fixture.invalid is not None:
