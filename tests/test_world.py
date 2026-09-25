@@ -109,7 +109,7 @@ async def test_catches_a_channel_that_stays_inline_after_moving(stream_sim):
     world = server.world
 
     def emit(s, g, now):  # every frame inline as well as on the stream connection
-        stream = s.stream_conn
+        stream, resync = s.stream_conn, g.resync
         s.stream_conn = None
         try:
             type(world)._emit_frame(world, s, g, now)
@@ -117,6 +117,7 @@ async def test_catches_a_channel_that_stays_inline_after_moving(stream_sim):
             s.stream_conn = stream
         if stream is not None:
             g.seq -= 1
+            g.resync = resync  # the stream copy is the one the rules are about
             type(world)._emit_frame(world, s, g, now)
 
     world._emit_frame = emit
