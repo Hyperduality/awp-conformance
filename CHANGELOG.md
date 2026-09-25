@@ -1,7 +1,10 @@
 # Changelog
 
-## Unreleased
+## 0.1.0a2
 
+Targets specification revision `0.1-draft.8`.
+
+- AWP-DAT-002 applies to streaming only, as draft 8 states.
 - Fixture key `long_params`: params that make a move outlast its type's `max_duration_ms`, so AWP-ACT-008 is tested against a world whose moves end sooner. The awp-sim fixture slows its moves to 0.01 m/s for it.
 
 ## 0.1.0a1

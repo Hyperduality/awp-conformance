@@ -2,7 +2,7 @@
 
 The conformance suite for the [Agent World Protocol](https://www.agentworldprotocol.com). It tests a world at a WebSocket URL, or an agent launched against the suite's own harness world, against the [requirement matrix](https://www.agentworldprotocol.com/spec/requirements) of one specification revision, and reports a verdict per requirement ID.
 
-It targets specification revision **`0.1-draft.7`**, pinned as the `spec/` submodule. The suite shares no code with any implementation: it speaks the protocol from the bundled canonical schemas, lifecycle table, and matrix.
+It targets specification revision **`0.1-draft.8`**, pinned as the `spec/` submodule. The suite shares no code with any implementation: it speaks the protocol from the bundled canonical schemas, lifecycle table, and matrix.
 
 ```bash
 pip install --pre awp-conformance
