@@ -379,13 +379,18 @@ class Harness:
     async def _frame(self, s: _Session, cid: int, *, resync: bool = False) -> None:
         name = s.channels[cid]["channel"]
         s.sent_tick[cid] = s.tick
+        streamed = s.stream_ws is not None and not self.silent
+        resync = resync or (streamed and cid in s.stream_fresh)  # the first on a stream connection
         for gap in list(s.gaps):
-            if gap[0] == cid and s.frame_seq.get(cid, 0) == gap[1]:
-                s.gaps.remove(gap)
-                s.frame_seq[cid] += GAP
-                resync = resync or gap[2]
-                if not s.gaps:
-                    self.gaps_done_ns = time.monotonic_ns()
+            if gap[0] != cid or s.frame_seq.get(cid, 0) < gap[1]:
+                continue
+            if resync and not gap[2]:
+                continue  # a resync frame makes the gap before it not loss (AWP-DAT-009)
+            s.gaps.remove(gap)
+            s.frame_seq[cid] += GAP
+            resync = resync or gap[2]
+            if not s.gaps:
+                self.gaps_done_ns = time.monotonic_ns()
         s.frame_seq[cid] = s.frame_seq.get(cid, 0) + 1
         ts = self.clock(s)
         s.frames_ts.add(ts)
@@ -400,11 +405,13 @@ class Harness:
             params["tick"] = s.tick
         else:
             params["ts_send_ns"] = ts
-        if s.stream_ws is not None and not self.silent:
-            flags = params["flags"] | (0x09 if cid in s.stream_fresh else 0)
+        if streamed:
+            assert s.stream_ws is not None
             s.stream_fresh.discard(cid)
             ext: dict[str, int] = {k: params[k] for k in ("tick", "ts_send_ns") if k in params}
-            data = binary.encode(cid, params["seq"], ts, self._payload(name), flags=flags, ext=ext)
+            data = binary.encode(
+                cid, params["seq"], ts, self._payload(name), flags=params["flags"], ext=ext
+            )
             with contextlib.suppress(ConnectionClosed):
                 await s.stream_ws.send(data)
             return

@@ -133,3 +133,30 @@ def test_fixture_matches_the_reference_manifest():
     fixture = Fixture.from_dict(json.loads((root / "fixtures" / "awp-sim.json").read_text()))
     assert fixture.problems(WorldConfig().manifest()) == []
     assert len(fixture.moves) >= 3
+
+
+async def test_the_injected_loss_gap_never_follows_into_a_resync_frame():
+    """The first frame on a stream connection is a resync, which makes the gap before it not loss
+    (AWP-DAT-009); the frame-gaps stimulus skips its seqs on the next frame instead."""
+    from awp_conformance import frames
+    from awp_conformance.agent.harness import Episode, Harness, _Session
+    from awp_conformance.results import Results
+
+    manifest = WorldConfig(mode="streaming").manifest()
+    episode = Episode("frame-gaps", "streaming", frame_gaps=True)
+    harness = Harness(manifest, episode, Results(side="agent"))
+    sent: list[frames.Decoded] = []
+
+    class Stream:
+        async def send(self, data: bytes) -> None:
+            sent.append(frames.decode(data))
+
+    s = _Session("s", "t", "streaming", "arm_01", 0, {1: {"channel": "proprio"}}, [])
+    s.stream_ws = Stream()  # type: ignore[assignment]
+    s.stream_fresh = {1}
+    s.frame_seq = {1: 3}
+    s.gaps = [(1, 3, False)]
+    await harness._frame(s, 1)
+    await harness._frame(s, 1)
+    assert [(f.seq, f.resync) for f in sent] == [(4, True), (8, False)]
+    assert harness.gaps_done_ns is not None
