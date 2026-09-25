@@ -23,7 +23,7 @@
         "last_seq": { "$ref": "common.schema.json#/$defs/seq" },
         "clamped_count": { "$ref": "common.schema.json#/$defs/u53" }
       },
-      "required": ["frames_applied", "last_seq"],
+      "required": ["frames_applied", "last_seq", "clamped_count"],
       "additionalProperties": true
     }
   },

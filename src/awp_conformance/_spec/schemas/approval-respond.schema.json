@@ -9,20 +9,20 @@
     "note": { "type": "string" },
     "standing": {
       "type": "object",
-      "description": "Scoped standing approval (AWP-APR-004).",
+      "description": "Scoped standing approval (AWP-APR-004); only with decision approve, on a world declaring safety_policy.standing_approvals.",
       "properties": {
         "scope": {
           "type": "object",
           "properties": {
             "type": { "$ref": "common.schema.json#/$defs/identifier" },
-            "predicate": { "type": "object", "description": "JSON Schema the params must satisfy." }
+            "predicate": { "type": "object", "description": "JSON Schema the params must satisfy; absent, any params." }
           },
           "required": ["type"],
           "x-awp-closed": true
         },
-        "expires_at": { "$ref": "common.schema.json#/$defs/ts_mono_ns" }
+        "expires_at_ns": { "$ref": "common.schema.json#/$defs/ts_mono_ns", "description": "End of the grant, on the requesting session's clock." }
       },
-      "required": ["scope", "expires_at"],
+      "required": ["scope", "expires_at_ns"],
       "x-awp-closed": true
     }
   },

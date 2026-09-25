@@ -29,6 +29,7 @@ class Finding:
 
 @dataclass
 class Results:
+    side: str = "world"
     findings: list[Finding] = field(default_factory=list)
     not_applicable: dict[str, str] = field(default_factory=dict)
     untested_reason: dict[str, str] = field(default_factory=dict)
@@ -52,18 +53,19 @@ class Results:
 
     def verdict(self, requirement: str) -> Outcome:
         req = REQUIREMENTS[requirement]
-        if req.kind == "manual":
-            return Outcome.MANUAL
-        if req.kind == "untestable":
+        kind = req.kind_for(self.side)
+        if kind == "manual":
+            return Outcome.NOT_APPLICABLE if requirement in self.not_applicable else Outcome.MANUAL
+        if kind == "untestable":
             return Outcome.UNTESTABLE
         found = self.of(requirement)
         failed = [f for f in found if not f.ok]
         if failed:
             # A MAY feature, once offered, binds like a MUST; only SHOULDs degrade to warnings.
-            soft = req.kind == "warning" or req.level == "SHOULD" or all(f.should for f in failed)
+            soft = kind == "warning" or req.level == "SHOULD" or all(f.should for f in failed)
             return Outcome.WARN if soft else Outcome.FAIL
         if found:
             return Outcome.PASS
         if requirement in self.not_applicable:
             return Outcome.NOT_APPLICABLE
-        return Outcome.UNTESTED
+        return Outcome.MANUAL if kind == "fallback" else Outcome.UNTESTED

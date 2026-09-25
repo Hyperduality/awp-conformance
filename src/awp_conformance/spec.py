@@ -193,15 +193,22 @@ class Requirement:
     level: str  # MUST | SHOULD | MAY
     page: str
     text: str
+    agent_test: str = ""  # the agent side's own entry, on a both-sides row tested differently
 
-    @property
-    def kind(self) -> str:
-        """assert, warning, manual, or untestable (the matrix's Test column)."""
-        if self.test.startswith("manual"):
+    def test_for(self, side: str) -> str:
+        return self.agent_test if side == "agent" and self.agent_test else self.test
+
+    def kind_for(self, side: str) -> str:
+        """assert, warning, fallback (tested where observable, else manual), manual, or
+        untestable, from the matrix's entry for `side`."""
+        test = self.test_for(side)
+        if test.startswith("manual"):
             return "manual"
-        if self.test.startswith("untestable"):
+        if test.startswith("untestable"):
             return "untestable"
-        if "(warning)" in self.test:
+        if ", else manual:" in test:
+            return "fallback"
+        if "(warning)" in test:
             return "warning"
         return "assert"
 

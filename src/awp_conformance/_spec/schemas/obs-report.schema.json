@@ -24,7 +24,7 @@
         "type": "object",
         "properties": {
           "frames": { "$ref": "common.schema.json#/$defs/u53", "description": "Frames received." },
-          "gaps": { "$ref": "common.schema.json#/$defs/u53", "description": "Frames missing, by seq." },
+          "gaps": { "$ref": "common.schema.json#/$defs/u53", "description": "Frames missing, by seq; the gap before a resync frame is not counted (AWP-DAT-009)." },
           "jitter_ns": { "$ref": "common.schema.json#/$defs/u53", "description": "Mean of |(R_j − R_i) − (S_j − S_i)| over consecutive frames; R is the agent clock at receipt, S is ts_send_ns." },
           "staleness_ns": { "$ref": "common.schema.json#/$defs/latency_stats", "description": "Staleness at receipt: (agent receipt + offset_ns) − ts_mono_ns." }
         },

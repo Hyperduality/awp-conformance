@@ -5,7 +5,7 @@
   "type": "object",
   "properties": {
     "code": { "type": "integer" },
-    "message": { "type": "string", "pattern": "^AWP_[A-Z_]+$|^[A-Z][a-z ]+$" },
+    "message": { "type": "string", "pattern": "^AWP_[A-Z_]+$|^[A-Z][A-Za-z ]+$" },
     "data": {
       "type": "object",
       "properties": {

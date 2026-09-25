@@ -129,8 +129,9 @@ def _requirements(args: argparse.Namespace) -> int:
     for req in REQUIREMENTS.values():
         if args.side and req.side not in (args.side, "both"):
             continue
+        kind = req.kind_for(args.side or "world")
         tests = ", ".join(covered.get(req.id, [])) or (
-            "passive" if req.kind in ("assert", "warning") else req.kind
+            "passive" if kind in ("assert", "warning", "fallback") else kind
         )
         print(f"{req.id:12} {req.level:6} {req.side:5} {req.applies:9} {req.gate:36} {tests}")
     return 0

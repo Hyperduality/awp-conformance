@@ -120,8 +120,8 @@ dev = [
 
 [[package]]
 name = "awp-python"
-version = "0.1.0a1"
-source = { git = "https://github.com/Hyperduality/awp-python?branch=main#0b2fa695cf02b43ebd5285629c03e869d5573816" }
+version = "0.1.0a3"
+source = { git = "https://github.com/Hyperduality/awp-python?branch=main#c8a1df1615448c5f42c3097efe747557aaf69c3e" }
 dependencies = [
     { name = "jsonschema" },
     { name = "websockets" },

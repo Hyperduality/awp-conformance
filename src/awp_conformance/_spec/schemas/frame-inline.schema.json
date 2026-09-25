@@ -8,7 +8,7 @@
     "channel_id": { "$ref": "common.schema.json#/$defs/channel_id" },
     "seq": { "$ref": "common.schema.json#/$defs/seq" },
     "ts_mono_ns": { "$ref": "common.schema.json#/$defs/ts_mono_ns" },
-    "flags": { "type": "integer", "minimum": 0, "maximum": 255, "description": "Bit 0 keyframe, bit 1 end-of-burst, bit 3 resync. Senders set bit 2 (extensions are explicit fields in JSON) and bits 4-7 to 0 and never set resync without keyframe (AWP-DAT-004/005/009); receivers ignore bits 4-7.", "x-awp-lint": { "enum": [0, 1, 2, 3, 9, 11] } },
+    "flags": { "type": "integer", "minimum": 0, "maximum": 255, "description": "Bit 0 keyframe, bit 1 end-of-burst, bit 3 resync. Senders set bits 2 and 4-7 to 0 (extensions are explicit fields in JSON) and never set resync without keyframe (AWP-DAT-004/005/009); receivers ignore bits 4-7.", "x-awp-lint": { "enum": [0, 1, 2, 3, 9, 11] } },
     "tick": { "$ref": "common.schema.json#/$defs/tick" },
     "ts_sim_ns": { "$ref": "common.schema.json#/$defs/ts_sim_ns" },
     "ts_send_ns": { "$ref": "common.schema.json#/$defs/ts_send_ns", "description": "Required on observation frames in streaming sessions (AWP-OBS-006)." },
