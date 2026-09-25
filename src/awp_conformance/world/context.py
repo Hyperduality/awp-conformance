@@ -85,6 +85,11 @@ class WorldContext:
                 return list(e.get("channels", []))
         return []
 
+    def manifest_channel(self, name: str) -> dict[str, Any]:
+        return next(
+            (c for c in self.manifest.get("observation_channels", []) if c["id"] == name), {}
+        )
+
     @property
     def safety(self) -> dict[str, Any]:
         return dict(self.manifest.get("safety_policy") or {})

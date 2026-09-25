@@ -50,3 +50,13 @@ async def lockstep_sim(tmp_path: Path) -> AsyncIterator[tuple[Server, Path]]:
     server = await serve(world)
     yield server, audit
     await server.stop()
+
+
+@pytest.fixture
+async def stream_sim(tmp_path: Path) -> AsyncIterator[tuple[Server, Path]]:
+    audit = tmp_path / "audit"
+    world = World(WorldConfig(mode="streaming", **FAST), audit=AuditLog(audit))
+    server = Server(world, port=0, stream_binding=True)
+    await server.start()
+    yield server, audit
+    await server.stop()

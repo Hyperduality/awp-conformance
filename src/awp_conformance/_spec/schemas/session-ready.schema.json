@@ -30,7 +30,7 @@
           "binding": { "type": "string", "enum": ["inline", "ws", "grpc", "webrtc", "webtransport", "shm"], "description": "Stream binding (AWP-TRN-003)." },
           "url": { "type": "string" },
           "signaling": { "type": "string" },
-          "channels": { "type": "array", "items": { "$ref": "common.schema.json#/$defs/channel_id" } },
+          "channels": { "type": "array", "items": { "$ref": "common.schema.json#/$defs/channel_id" }, "description": "Channels this endpoint carries; when omitted, every channel of the session, including channels subscribed later (AWP-TRN-012)." },
           "max_frame_bytes": { "type": "integer", "minimum": 1024, "default": 16777216, "description": "Largest frame this endpoint carries (AWP-TRN-011)." }
         },
         "required": ["binding"],

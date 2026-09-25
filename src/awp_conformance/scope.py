@@ -42,6 +42,7 @@ class Scope:
             "max_basis_age_ms declared": "max_basis_age_ms" in safety,
             "scene channel offered": any(c.get("id") == "scene" for c in channels),
             "multiple sessions": "multiple sessions" in self.facts,
+            "stream endpoints offered": "stream endpoints offered" in self.facts,
         }
         return known.get(condition)
 

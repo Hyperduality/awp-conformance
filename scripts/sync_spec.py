@@ -45,6 +45,7 @@ def expected() -> dict[Path, str]:
     table.pop("pre_execution_cancel", None)  # YAML anchor holder, not part of the table
     files[DEST / "lifecycle.json"] = json.dumps(table, indent=2) + "\n"
     files[DEST / "requirements.json"] = json.dumps(requirements(), indent=1) + "\n"
+    files[DEST / "frames.json"] = (SPEC / "schemas" / "test-vectors" / "frames.json").read_text()
     return files
 
 

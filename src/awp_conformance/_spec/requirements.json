@@ -2150,6 +2150,26 @@
   "text": "Frame size. Each stream endpoint MAY declare `max_frame_bytes` (default 16 MiB); senders MUST NOT emit a larger frame on it, and a world MUST NOT\u2026"
  },
  {
+  "id": "AWP-TRN-012",
+  "side": "both",
+  "applies": "all",
+  "gate": "feature:stream endpoints offered",
+  "test": "AWP-TRN-012",
+  "level": "MUST",
+  "page": "/spec/transport/overview",
+  "text": "Moving a channel. A channel is delivered inline until a stream connection that carries it is established, and from then on only on that\u2026"
+ },
+ {
+  "id": "AWP-TRN-013",
+  "side": "both",
+  "applies": "all",
+  "gate": "feature:stream endpoints offered",
+  "test": "AWP-TRN-013",
+  "level": "MUST",
+  "page": "/spec/transport/overview",
+  "text": "Stream connections. A stream connection is opened against an endpoint URL with the session token as its bearer credential (AWP-SEC-004..006) and\u2026"
+ },
+ {
   "id": "AWP-TSK-001",
   "side": "world",
   "applies": "all",

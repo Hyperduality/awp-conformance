@@ -11,19 +11,21 @@ from ..fixture import Fixture
 from ..link import HandshakeRefused, Link
 from ..monitor import SessionTracker
 from ..results import Results
-from . import t_actions, t_basics, t_lockstep, t_multi, t_operator, t_resume, t_streaming
+from . import (
+    t_actions,
+    t_basics,
+    t_lockstep,
+    t_multi,
+    t_operator,
+    t_resume,
+    t_streaming,
+    t_streams,
+)
 from .context import Hook, Skip, WorldContext
 from .registry import TESTS, WorldTest
 
-MODULES = (
-    t_basics,
-    t_actions,
-    t_lockstep,
-    t_streaming,
-    t_resume,
-    t_multi,
-    t_operator,
-)  # registered
+# Each module registers its tests on import; stream bindings run last.
+MODULES = (t_basics, t_actions, t_lockstep, t_streaming, t_resume, t_multi, t_operator, t_streams)
 
 log = logging.getLogger("awp_conformance")
 

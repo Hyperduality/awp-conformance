@@ -108,6 +108,8 @@ class ChannelView:
     frames: int = 0
     need_resync: bool = False
     fresh: bool = True  # the next frame is the first of a subscription
+    binding: str = "inline"
+    stream_since_ns: int | None = None  # when the channel's first stream frame arrived
 
 
 class SessionTracker:
@@ -366,15 +368,32 @@ class SessionTracker:
         if p["state"] == "executing":
             a.executed = True
 
-    def on_frame(self, p: dict[str, Any]) -> None:
+    def on_frame(self, p: dict[str, Any], binding: str = "inline") -> None:
         cid = p["channel_id"]
         ch = self.channels.get(cid)
         if not self.expect("AWP-TRN-005", ch is not None, f"frame on ungranted channel {cid}"):
             return
         assert ch is not None
+        if ch.last_seq is not None and p["seq"] <= ch.last_seq and binding != ch.binding:
+            self.ok("AWP-TRN-012")  # overtaken on the connection the channel moved to
+            return
+        if binding != "inline" and ch.binding == "inline":
+            self.expect(
+                "AWP-TRN-012",
+                p["flags"] & 0x09 == 0x09,
+                f"{ch.name}: first frame on the stream connection is not a resync keyframe",
+            )
+            ch.stream_since_ns = time.monotonic_ns()
+        elif binding == "inline" and ch.stream_since_ns is not None:
+            late = (time.monotonic_ns() - ch.stream_since_ns) / 1e6
+            self.expect(
+                "AWP-TRN-012", late < 300, f"{ch.name}: inline {late:.0f} ms after it moved"
+            )
+        ch.binding = binding
         flags = p["flags"]
-        self.expect("AWP-DAT-004", not flags & 0x04, f"{ch.name}: inline flags bit 2 set")
-        self.expect("AWP-DAT-005", not flags & 0xF0, f"{ch.name}: reserved flag bits set")
+        if binding == "inline":
+            self.expect("AWP-DAT-004", not flags & 0x04, f"{ch.name}: inline flags bit 2 set")
+            self.expect("AWP-DAT-005", not flags & 0xF0, f"{ch.name}: reserved flag bits set")
         resync = bool(flags & 0x08)
         if resync:
             self.expect(
@@ -397,7 +416,7 @@ class SessionTracker:
             self.expect("AWP-DAT-001", ordered, f"{ch.name}: seq {seq} after {ch.last_seq}")
             for requirement in ("AWP-OBS-003", "AWP-TRN-007"):
                 self.expect(requirement, ordered, f"{ch.name}: frames reordered")
-            if ch.loss_class == "reliable" and seq != ch.last_seq + 1:
+            if ch.loss_class == "reliable" and seq > ch.last_seq + 1:
                 self.expect("AWP-DAT-001", resync, f"{ch.name}: reliable seq gap without resync")
         if ch.last_ts is not None:
             self.expect(

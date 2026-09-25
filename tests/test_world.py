@@ -90,3 +90,34 @@ async def test_catches_a_cancel_without_safe_abort(streaming_sim):
     world._rpc_action_cancel = instant_cancel
     run = await run_world(server.url, sim_fixture(), only=["cancel-executing"])
     assert "AWP-LIF-005" in failures(run)
+
+
+STREAM_TESTS = ["session-open", "ws-stream", "lifecycle-complete", "resume-replay", "watchdog"]
+
+
+async def test_ws_stream_binding_passes(stream_sim):
+    server, audit = stream_sim
+    run = await run_world(server.url, sim_fixture(audit), only=STREAM_TESTS)
+    assert failures(run) == {}
+    passed = {f.requirement for f in run.results.findings if f.ok}
+    assert {"AWP-TRN-010", "AWP-TRN-012", "AWP-TRN-013", "AWP-DAT-006"} <= passed
+
+
+async def test_catches_a_channel_that_stays_inline_after_moving(stream_sim):
+    server, _ = stream_sim
+    world = server.world
+
+    def emit(s, g, now):  # every frame inline as well as on the stream connection
+        stream = s.stream_conn
+        s.stream_conn = None
+        try:
+            type(world)._emit_frame(world, s, g, now)
+        finally:
+            s.stream_conn = stream
+        if stream is not None:
+            g.seq -= 1
+            type(world)._emit_frame(world, s, g, now)
+
+    world._emit_frame = emit
+    run = await run_world(server.url, sim_fixture(), only=["ws-stream"])
+    assert "AWP-TRN-012" in failures(run)

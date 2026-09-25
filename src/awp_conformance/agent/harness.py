@@ -25,6 +25,7 @@ from websockets.exceptions import ConnectionClosed
 from websockets.http11 import Request, Response
 from websockets.typing import Subprotocol
 
+from .. import frames as binary
 from .. import spec
 from ..results import Results
 
@@ -43,6 +44,7 @@ class Episode:
     invalid_manifest: bool = False
     grant_no_actions: bool = False
     silent_after_admission: bool = False
+    offer_stream: bool = True
     refuse_first_submission: bool = False
     action_ms: int = 600
     action_ticks: int = 5
@@ -83,6 +85,8 @@ class _Session:
     last_telemetry: int = 0
     redelivered: bool = False
     seq_at_drop: int | None = None
+    stream_ws: ServerConnection | None = None
+    stream_fresh: set[int] = field(default_factory=set)
 
 
 class Harness:
@@ -129,6 +133,7 @@ class Harness:
         self._pending_pings: dict[str, int] = {}
         self.consumes: set[str] = set()
         self._pending_probe: str | None = None
+        self.stream_attached = False
         self.silent = False
         self.silent_since: int | None = None
         self.agent_closed_at: int | None = None
@@ -177,6 +182,8 @@ class Harness:
     def _authorize(self, connection: ServerConnection, request: Request) -> Response | None:
         self.handshakes.append(request)
         query = urlsplit(request.path).query
+        if urlsplit(request.path).path == "/stream":
+            return self._authorize_stream(request, query)
         self.check(
             "AWP-SEC-005", self.token not in query, "the agent put its credential in the URL"
         )
@@ -192,7 +199,43 @@ class Harness:
         self.check("AWP-SEC-005", ok, "the agent presented no bearer credential")
         return None
 
+    def _authorize_stream(self, request: Request, query: str) -> Response | None:
+        s = self.session
+        token = s.token if s else ""
+        offered = [
+            p.strip()
+            for v in request.headers.get_all("Sec-WebSocket-Protocol")
+            for p in v.split(",")
+        ]
+        presented = request.headers.get("Authorization") == f"Bearer {token}" or (
+            f"awp.bearer.{token}" in offered
+        )
+        self.check("AWP-SEC-005", token not in query, "the agent put its session token in a URL")
+        self.check("AWP-SEC-005", presented, "the stream connection lacks the session token")
+        self.check("AWP-TRN-013", "awp" in offered, f"stream subprotocols {offered}")
+        return None
+
+    async def _stream(self, ws: ServerConnection) -> None:
+        s = self.session
+        if s is None:
+            await ws.close(code=1008, reason="no session")
+            return
+        s.stream_ws = ws
+        s.stream_fresh = set(s.channels)
+        self.stream_attached = True
+        try:
+            async for raw in ws:
+                self.check("AWP-TRN-013", isinstance(raw, bytes), "the agent sent text on a stream")
+        except ConnectionClosed:
+            pass
+        finally:
+            if s.stream_ws is ws:
+                s.stream_ws = None
+
     async def _handle(self, ws: ServerConnection) -> None:
+        if ws.request is not None and urlsplit(ws.request.path).path == "/stream":
+            await self._stream(ws)
+            return
         self.connections += 1
         try:
             async for raw in ws:
@@ -270,6 +313,12 @@ class Harness:
             s.redelivered = True
             await self._note(s, "action.status", a.status)  # AWP-LIF-009: a redelivery
 
+    def _endpoints(self) -> list[dict[str, Any]]:
+        stream = (
+            [{"binding": "ws", "url": self.url + "/stream"}] if self.episode.offer_stream else []
+        )
+        return [*stream, {"binding": "inline"}]
+
     def _payload(self, channel: str) -> bytes:
         sample = self.samples.get(channel)
         if sample is None:
@@ -296,6 +345,14 @@ class Harness:
             params["tick"] = s.tick
         else:
             params["ts_send_ns"] = ts
+        if s.stream_ws is not None and not self.silent:
+            flags = params["flags"] | (0x09 if cid in s.stream_fresh else 0)
+            s.stream_fresh.discard(cid)
+            ext: dict[str, int] = {k: params[k] for k in ("tick", "ts_send_ns") if k in params}
+            data = binary.encode(cid, params["seq"], ts, self._payload(name), flags=flags, ext=ext)
+            with contextlib.suppress(ConnectionClosed):
+                await s.stream_ws.send(data)
+            return
         await self._send(s.ws, {"jsonrpc": "2.0", "method": "obs.frame", "params": params})
 
     # ------------------------------------------------------------ receiving
@@ -465,7 +522,7 @@ class Harness:
                 "admin": [],
                 "envelopes": [],
             },
-            "stream_endpoints": [{"binding": "inline"}],
+            "stream_endpoints": self._endpoints(),
             "frame_tree": {
                 "frames": [{"id": "world", "parent": None}, {"id": "base", "parent": "world"}]
             },
@@ -514,7 +571,7 @@ class Harness:
                 "admin": [],
                 "envelopes": [],
             },
-            "stream_endpoints": [{"binding": "inline"}],
+            "stream_endpoints": self._endpoints(),
             "safe_state": False,
         }
         if s.mode == "lockstep":
