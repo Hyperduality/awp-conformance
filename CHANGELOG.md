@@ -1,5 +1,11 @@
 # Changelog
 
+## 0.1.0a4
+
+Targets specification revision `0.1-draft.9`.
+
+- The `frame-gaps` episode no longer puts its seq gap just before a resync frame. When a channel's first frame on a new stream connection followed the gap, a conformant agent was reported failing AWP-DAT-001.
+
 ## 0.1.0a3
 
 Targets specification revision `0.1-draft.9`.
