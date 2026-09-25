@@ -236,6 +236,9 @@ class SessionTracker:
             self.next_seq = last_status_seq + 1
             for ch in self.channels.values():
                 ch.need_resync = ch.loss_class == "reliable"
+                ch.stream_since_ns = (
+                    None  # inline again until streams are re-established (AWP-TRN-008)
+                )
         else:
             self.next_seq = 1
 
@@ -373,21 +376,23 @@ class SessionTracker:
         if not self.expect("AWP-TRN-005", ch is not None, f"frame on ungranted channel {cid}"):
             return
         assert ch is not None
+        if binding == "inline" and ch.stream_since_ns is not None:
+            # Once moved, the channel is not inline any more; only frames in flight at the move
+            # may still arrive there.
+            late = (time.monotonic_ns() - ch.stream_since_ns) / 1e6
+            self.expect(
+                "AWP-TRN-012", late < 300, f"{ch.name}: inline {late:.0f} ms after it moved"
+            )
         if ch.last_seq is not None and p["seq"] <= ch.last_seq and binding != ch.binding:
             self.ok("AWP-TRN-012")  # overtaken on the connection the channel moved to
             return
-        if binding != "inline" and ch.binding == "inline":
+        if binding != "inline" and ch.stream_since_ns is None:
             self.expect(
                 "AWP-TRN-012",
                 p["flags"] & 0x09 == 0x09,
                 f"{ch.name}: first frame on the stream connection is not a resync keyframe",
             )
             ch.stream_since_ns = time.monotonic_ns()
-        elif binding == "inline" and ch.stream_since_ns is not None:
-            late = (time.monotonic_ns() - ch.stream_since_ns) / 1e6
-            self.expect(
-                "AWP-TRN-012", late < 300, f"{ch.name}: inline {late:.0f} ms after it moved"
-            )
         ch.binding = binding
         flags = p["flags"]
         if binding == "inline":

@@ -174,6 +174,7 @@ async def ws_stream(ctx: WorldContext) -> None:
         ctx.check("AWP-SAF-009", bool(degraded), "no channel_degraded while the stream was down")
     for c in link.tracker.channels.values():
         c.binding = "inline"  # the next stream frame is the first on a new connection
+        c.stream_since_ns = None
     again = StreamLink(url, link.tracker, limit)
     await again.open(link.tracker.token)
     await asyncio.sleep(0.5)
