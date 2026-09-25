@@ -79,13 +79,16 @@ async def max_duration(ctx: WorldContext) -> None:
     if limit is None:
         ctx.na("AWP-ACT-008", "no max_duration_ms declared")
         return
-    if limit >= ctx.fixture.extended_min_ms:
+    long = limit >= ctx.fixture.extended_min_ms
+    if long and ctx.fixture.long_params is None:
         ctx.results.mark_untested(
-            "AWP-ACT-008", f"fixture moves end before max_duration_ms ({limit})"
+            "AWP-ACT-008",
+            f"fixture moves end before max_duration_ms ({limit}) and it has no long_params",
         )
         return
     link = await ctx.session()
-    action_id = await ctx.running(link)
+    move = ctx.next_move()
+    action_id = await ctx.running(link, ctx.long(move) if long else move)
     await ctx.wait_terminal(link, action_id, limit / 1000 + 5)
     s = ctx.status(link, action_id)
     ctx.check(
