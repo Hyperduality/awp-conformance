@@ -4,6 +4,7 @@ from __future__ import annotations
 
 from typing import Any
 
+import pytest
 from awp.errors import AwpError, ErrorCode
 from awp.lifecycle import ActionState
 
@@ -121,3 +122,51 @@ async def test_catches_a_channel_that_stays_inline_after_moving(stream_sim):
     world._emit_frame = emit
     run = await run_world(server.url, sim_fixture(), only=["ws-stream"])
     assert "AWP-TRN-012" in failures(run)
+
+
+FEATURE_TESTS = [
+    "manifest",
+    "task",
+    "approval",
+    "blend",
+    "transfer",
+    "seeding",
+    "snapshot-restore",
+    "command-channel",
+    "ws-stream",
+]
+
+
+@pytest.mark.parametrize("mode", ["streaming", "lockstep"])
+async def test_features_beyond_core_pass(tmp_path, mode):
+    from .conftest import APPROVER, featured
+
+    server = await featured(mode, tmp_path / "audit")
+    try:
+        fixture = sim_fixture(tmp_path / "audit")
+        fixture.approver_token = APPROVER
+        fixture.servo = {
+            "action": {"type": "servo", "params": {}},
+            "setpoint": {"v_mps": [0.05, 0.0, 0.0]},
+            "violation": {"v_mps": [2.0, 0.0, 0.0]},
+        }
+        run = await run_world(server.url, fixture, only=FEATURE_TESTS)
+    finally:
+        await server.stop()
+    assert failures(run) == {}
+    passed = {f.requirement for f in run.results.findings if f.ok}
+    common = {
+        "AWP-TSK-001",
+        "AWP-TSK-002",
+        "AWP-APR-001",
+        "AWP-APR-002",
+        "AWP-APR-007",
+        "AWP-PRE-004",
+        "AWP-EMB-003",
+    }
+    specific = (
+        {"AWP-CMD-003", "AWP-CMD-005", "AWP-TRN-012"}
+        if mode == "streaming"
+        else {"AWP-REP-001", "AWP-REP-002", "AWP-REP-003"}
+    )
+    assert common | specific <= passed

@@ -163,7 +163,7 @@ class WorldContext:
         return link
 
     async def initial_frames(self, link: Link, timeout: float = 3.0) -> None:
-        wanted = {c.channel_id for c in link.tracker.channels.values()}
+        wanted = set(link.tracker.observation_channels())
         await link.wait_for(
             lambda: all(
                 link.tracker.channels[c].frames for c in wanted if c in link.tracker.channels

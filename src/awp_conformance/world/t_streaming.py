@@ -12,17 +12,25 @@ from .registry import world_test
 
 @world_test("stream-delivery", ["AWP-TIM-005", "AWP-DAT-003"], mode="streaming")
 async def stream_delivery(ctx: WorldContext) -> None:
+    ctx.na("AWP-OBS-002", "per-tick frames are lockstep's")
     link = await ctx.session()
     before = len(link.notes)
     await asyncio.sleep(1.0)
-    rates = {
-        g["channel_id"]: g["rate_hz"] for g in (link.tracker.ready or {})["granted"]["channels"]
-    }
+    observed = link.tracker.observation_channels()
+    granted = (link.tracker.ready or {})["granted"]["channels"]
+    rates = {g["channel_id"]: g["rate_hz"] for g in granted if g["channel_id"] in observed}
     counts: dict[int, int] = {}
     for _, m in link.notes[before:]:
         if m.get("method") == "obs.frame":
             cid = m["params"]["channel_id"]
             counts[cid] = counts.get(cid, 0) + 1
+    sim = [
+        m
+        for _, m in link.notes[before:]
+        if m.get("method") == "obs.frame" and "ts_sim_ns" in m["params"]
+    ]
+    if not sim:
+        ctx.na("AWP-CLK-003", "no simulated time distinct from the session clock")
     for cid, rate in rates.items():
         if rate:
             n = counts.get(cid, 0)
@@ -34,6 +42,11 @@ async def stream_delivery(ctx: WorldContext) -> None:
                 n <= rate * 1.25 + 2,
                 f"channel {cid}: {n} frames in 1 s at {rate} Hz",
             )
+
+
+@world_test("max-obs-rate-lockstep", ["AWP-AGM-002"], mode="lockstep")
+async def max_obs_rate_lockstep(ctx: WorldContext) -> None:
+    ctx.na("AWP-AGM-002", "lockstep frames come one per advance, not at a rate")
 
 
 @world_test("max-obs-rate", ["AWP-AGM-002"], mode="streaming")

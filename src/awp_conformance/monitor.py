@@ -32,21 +32,13 @@ REFUSED_WHILE_CLOSING = frozenset(
         "session.resume",
     }
 )
+# The event registry (AWP-EVT-001), from the bundled world-event schema.
 EVENT_REGISTRY = frozenset(
-    {
-        "entity_appeared",
-        "entity_removed",
-        "collision",
-        "e_stop_engaged",
-        "e_stop_released",
-        "envelope_violation",
-        "grant_expired",
-        "safe_state_entered",
-        "safe_state_exited",
-        "channel_degraded",
-        "world_resetting",
-        "world_shutdown",
-    }
+    next(
+        alt["enum"]
+        for alt in spec.SCHEMAS["world-event"]["properties"]["event"]["anyOf"]
+        if "enum" in alt
+    )
 )
 REASON_REQUIRED = frozenset({"rejected", "failed", "cancelled"})
 JSON_MODALITIES = ("text/event+json", "proprio/json", "servo/json")
@@ -110,6 +102,7 @@ class ChannelView:
     fresh: bool = True  # the next frame is the first of a subscription
     binding: str = "inline"
     stream_since_ns: int | None = None  # when the channel's first stream frame arrived
+    command: bool = False  # agent→world: no frames arrive on it (AWP-CMD-002)
 
 
 class SessionTracker:
@@ -119,6 +112,7 @@ class SessionTracker:
         self.manifest = manifest
         self.mode = mode
         self.channels_by_name = {c["id"]: c for c in manifest.get("observation_channels", [])}
+        self.command_channels = {c["id"]: c for c in manifest.get("command_channels", [])}
         self.consumes: set[str] | None = None
 
         self.ready: dict[str, Any] | None = None
@@ -249,7 +243,8 @@ class SessionTracker:
         current = {c.channel_id: c for c in self.channels.values()}
         self.channels = {}
         for g in grants:
-            declared = self.channels_by_name.get(g.get("channel", ""), {})
+            name = g.get("channel", "")
+            declared = self.channels_by_name.get(name) or self.command_channels.get(name, {})
             cid = g.get("channel_id")
             if not isinstance(cid, int):
                 continue
@@ -263,6 +258,7 @@ class SessionTracker:
                 loss_class=declared.get("loss_class", "reliable"),
                 modality=declared.get("modality", ""),
                 schema=declared.get("schema"),
+                command=name in self.command_channels,
             )
         self.expect(
             "AWP-TRN-005",
@@ -368,9 +364,12 @@ class SessionTracker:
         if p["state"] == "executing":
             a.executed = True
 
+    def observation_channels(self) -> dict[int, ChannelView]:
+        return {cid: c for cid, c in self.channels.items() if not c.command}
+
     def on_frame(self, p: dict[str, Any], binding: str = "inline") -> None:
         cid = p["channel_id"]
-        ch = self.channels.get(cid)
+        ch = self.observation_channels().get(cid)
         if not self.expect("AWP-TRN-005", ch is not None, f"frame on ungranted channel {cid}"):
             return
         assert ch is not None
@@ -542,7 +541,7 @@ class SessionTracker:
             self.closing = False
         elif method == "world.tick" and result is not None:
             self.tick = result.get("tick", self.tick)
-        elif method == "world.reset" and result is not None and "tick" in result:
+        elif method in ("world.reset", "world.restore") and result is not None and "tick" in result:
             self.tick = result["tick"]
         elif method in ("obs.subscribe", "obs.unsubscribe") and result is not None:
             before = set(self.channels)

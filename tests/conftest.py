@@ -3,7 +3,7 @@ from __future__ import annotations
 import json
 from collections.abc import AsyncIterator
 from pathlib import Path
-from typing import Any
+from typing import Any, Literal
 
 import pytest
 from awp_sim.audit import AuditLog
@@ -60,3 +60,22 @@ async def stream_sim(tmp_path: Path) -> AsyncIterator[tuple[Server, Path]]:
     await server.start()
     yield server, audit
     await server.stop()
+
+
+APPROVER = "conformance-approver"
+
+
+async def featured(mode: Literal["streaming", "lockstep"], audit: Path) -> Server:
+    features = {"task", "approval", "blend", "transfer"} | (
+        {"servo"} if mode == "streaming" else {"sim"}
+    )
+    extra: dict[str, Any] = FAST if mode == "streaming" else {}
+    config = WorldConfig(mode=mode, features=frozenset(features), approval_timeout_ms=2000, **extra)
+    server = Server(
+        World(config, audit=AuditLog(audit)),
+        port=0,
+        stream_binding=mode == "streaming",
+        approver_token=APPROVER,
+    )
+    await server.start()
+    return server

@@ -59,7 +59,7 @@ async def advance_ordering(ctx: WorldContext) -> None:
         if line["from"] == "world" and line["msg"].get("id") == reply.id
     )
     before, after = lines[:result_at], lines[result_at + 1 :]
-    for ch in link.tracker.channels.values():
+    for ch in link.tracker.observation_channels().values():
         ticks = [
             line["msg"]["params"].get("tick")
             for line in before
@@ -78,10 +78,11 @@ async def advance_ordering(ctx: WorldContext) -> None:
     ]
     ctx.check("AWP-TIM-003", not late, "an advance's frames or statuses followed its result")
     frames = [line for line in before if line["msg"].get("method") == "obs.frame"]
+    per_tick = len(link.tracker.observation_channels())
     ctx.check(
         "AWP-DAT-003",
-        len(frames) == 3 * len(link.tracker.channels),
-        f"{len(frames)} frames for 3 advances on {len(link.tracker.channels)} per-tick channels",
+        len(frames) == 3 * per_tick,
+        f"{len(frames)} frames for 3 advances on {per_tick} channels",
     )
     await ctx.settle(link)
 
@@ -163,8 +164,11 @@ async def determinism(ctx: WorldContext) -> None:
         return
     move = ctx.moves()[0]
 
+    seeded = bool((ctx.manifest.get("capabilities") or {}).get("seed"))
+
     async def run(pause_s: float) -> list[str]:
-        await link.call("world.reset", {"initial_state": initial})
+        start: dict[str, Any] = {"initial_state": initial, **({"seed": 1} if seeded else {})}
+        await link.call("world.reset", start)
         await asyncio.sleep(0.2)  # the reset's fresh frames are not part of the run
         before = len(link.notes)
         action_id, _ = await ctx.submit(link, move)

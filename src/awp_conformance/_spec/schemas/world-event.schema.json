@@ -10,7 +10,7 @@
           "type": "string",
           "enum": [
             "entity_appeared", "entity_removed", "collision", "e_stop_engaged", "e_stop_released", "envelope_violation",
-            "grant_expired", "safe_state_entered", "safe_state_exited", "channel_degraded", "world_resetting", "world_shutdown"
+            "grant_expired", "safe_state_entered", "safe_state_exited", "channel_degraded", "world_resetting", "world_shutdown", "embodiment_transferred"
           ]
         },
         { "$ref": "common.schema.json#/$defs/vendor_key" }

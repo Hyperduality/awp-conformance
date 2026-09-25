@@ -270,6 +270,16 @@
   "text": "Approval request content is subject to the audit redaction rules (AWP-AUD-006): `params` fields and the task text listed in\u2026"
  },
  {
+  "id": "AWP-APR-007",
+  "side": "world",
+  "applies": "all",
+  "gate": "feature:requires_approval",
+  "test": "AWP-APR-007",
+  "level": "MUST",
+  "page": "/spec/safety/approval",
+  "text": "Approver connections. An approver is a control connection the deployment authorizes, for example by its bearer credential (AWP-SEC-005); it\u2026"
+ },
+ {
   "id": "AWP-AUD-001",
   "side": "world",
   "applies": "all",
@@ -314,7 +324,7 @@
   "side": "world",
   "applies": "all",
   "gate": "capability:replay",
-  "test": "AWP-AUD-005 (replay bundle drives AWP-REP-003)",
+  "test": "manual: replay a recorded replay bundle with the world's own tooling and attach the result (AWP-REP-003)",
   "level": "MUST",
   "page": "/spec/safety/audit-log",
   "text": "Logs with full payloads plus a starting snapshot are sufficient for deterministic replay on worlds that advertise it."
@@ -1467,7 +1477,7 @@
   "test": "AWP-REP-001 (two seeded runs compared)",
   "level": "MUST",
   "page": "/spec/reproducibility",
-  "text": "Seeding. If `seed` is advertised, `session.open` MAY carry `seed`; two sessions with equal seeds and identical action sequences MUST produce\u2026"
+  "text": "Seeding. If `seed` is advertised, `session.open` and `world.reset` MAY carry `seed`, which seeds every random source of the simulation and changes\u2026"
  },
  {
   "id": "AWP-REP-002",
@@ -1477,7 +1487,7 @@
   "test": "AWP-REP-002",
   "level": "MUST",
   "page": "/spec/reproducibility",
-  "text": "Snapshot / restore. `world.snapshot` returns an opaque token; `world.restore` with that token MUST return the world to the exact captured state.\u2026"
+  "text": "Snapshot / restore. `world.snapshot` returns an opaque token; `world.restore` with that token MUST return the world to the exact captured state,\u2026"
  },
  {
   "id": "AWP-REP-003",
@@ -1487,7 +1497,7 @@
   "test": "AWP-REP-003 (record, restore, replay, compare hashes and state sequences)",
   "level": "MUST",
   "page": "/spec/reproducibility",
-  "text": "Deterministic replay. If `replay` is advertised, feeding a recorded audit log's action sequence \u2014 `action.submit` and `action.cancel` messages,\u2026"
+  "text": "Deterministic replay. If `replay` is advertised, feeding a recorded replay bundle's calls that change action state \u2014 `action.submit`,\u2026"
  },
  {
   "id": "AWP-ROB-001",
@@ -1743,7 +1753,7 @@
   "id": "AWP-SEC-003",
   "side": "world",
   "applies": "all",
-  "gate": "core (non-loopback)",
+  "gate": "core",
   "test": "AWP-SEC-003",
   "level": "MUST",
   "page": "/spec/transport/security",
@@ -1753,7 +1763,7 @@
   "id": "AWP-SEC-004",
   "side": "world",
   "applies": "all",
-  "gate": "core (non-loopback)",
+  "gate": "feature:stream endpoints offered",
   "test": "AWP-SEC-004",
   "level": "MUST",
   "page": "/spec/transport/security",

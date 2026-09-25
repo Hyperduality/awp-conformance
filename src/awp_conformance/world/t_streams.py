@@ -139,7 +139,7 @@ async def ws_stream(ctx: WorldContext) -> None:
         await ctx.advance(link, 2)
     else:
         await asyncio.sleep(1.0)
-    channels = {c.channel_id for c in link.tracker.channels.values()}
+    channels = set(link.tracker.observation_channels())
     seen = {f.channel_id for _, f in stream.frames}
     ctx.check("AWP-TRN-012", channels <= seen, f"stream carried channels {seen} of {channels}")
     ctx.check(

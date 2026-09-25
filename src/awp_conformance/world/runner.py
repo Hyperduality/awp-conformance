@@ -14,6 +14,7 @@ from ..results import Results
 from . import (
     t_actions,
     t_basics,
+    t_features,
     t_lockstep,
     t_multi,
     t_operator,
@@ -25,7 +26,17 @@ from .context import Hook, Skip, WorldContext
 from .registry import TESTS, WorldTest
 
 # Each module registers its tests on import; stream bindings run last.
-MODULES = (t_basics, t_actions, t_lockstep, t_streaming, t_resume, t_multi, t_operator, t_streams)
+MODULES = (
+    t_basics,
+    t_actions,
+    t_lockstep,
+    t_streaming,
+    t_resume,
+    t_multi,
+    t_operator,
+    t_streams,
+    t_features,
+)
 
 log = logging.getLogger("awp_conformance")
 
