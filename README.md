@@ -5,7 +5,7 @@ The conformance suite for the [Agent World Protocol](https://www.agentworldproto
 It targets specification revision **`0.1-draft.7`**, pinned as the `spec/` submodule. The suite shares no code with any implementation: it speaks the protocol from the bundled canonical schemas, lifecycle table, and matrix.
 
 ```bash
-pip install awp-conformance
+pip install --pre awp-conformance
 awp-conformance world ws://127.0.0.1:8710 --fixture my-world.json --out report/
 awp-conformance agent --manifest manifest.json --frames frames.json -- python my_agent.py --url {url}
 ```
