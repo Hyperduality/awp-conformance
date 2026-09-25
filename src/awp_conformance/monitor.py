@@ -307,6 +307,11 @@ class SessionTracker:
             self.expect(
                 "AWP-CTL-008", seq <= self.replay_to, f"status_seq {seq} repeated outside a replay"
             )
+            self.expect(
+                "AWP-LIF-001",
+                seq <= self.replay_to,
+                f"the transition at status_seq {seq} reported twice",
+            )
             return False
         self.highest = seq
         self.reported[seq] = identity

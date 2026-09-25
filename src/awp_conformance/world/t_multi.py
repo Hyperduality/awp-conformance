@@ -70,6 +70,16 @@ async def reset(ctx: WorldContext) -> None:
             len(fresh()) >= len(a.tracker.observation_channels()) and ticks == {a.tracker.tick},
             f"{len(fresh())} fresh frames after reset, ticks {ticks}, current {a.tracker.tick}",
         )
+        early = [
+            m
+            for at, m in a.notes[before_a:]
+            if m.get("method") == "obs.frame" and at <= reply.received_ns
+        ]
+        ctx.check(
+            "AWP-PRM-006",
+            len(early) >= len(a.tracker.observation_channels()),
+            f"{len(early)} of the fresh frames preceded the world.reset result",
+        )
     pong = await b.ping()
     ctx.check("AWP-PRM-006", pong.ok, "the other session did not survive the reset")
     bad = await a.call("world.reset", {"initial_state": "x-conformance.nowhere"})

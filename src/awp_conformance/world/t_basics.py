@@ -640,10 +640,25 @@ async def integer_range(ctx: WorldContext) -> None:
     if fut.done() and not fut.exception():
         codes.append(fut.result().code)
     ctx.check("AWP-CTL-009", 2006 in codes, f"ping with 2^60 answered {codes or 'nothing'}")
-    closed = await link.wait_for(
-        lambda: link.closed_by_world is not None or "closed" in link.tracker.states, 3.0
+    closed = await link.wait_for(lambda: link.closed_by_world is not None, 3.0)
+    ctx.check("AWP-CTL-009", closed, "the connection stayed open after AWP_INTEGER_RANGE")
+    if closed and link.closed_by_world is not None:
+        how = link.closed_by_world[1]
+        ctx.check(
+            "AWP-CTL-009",
+            how.startswith("1002") and "AWP_INTEGER_RANGE" in how,
+            f"closed with {how!r}, not 1002 AWP_INTEGER_RANGE",
+        )
+    reasons = [
+        n.get("reason")
+        for n in link.tracker.notes
+        if n["method"] == "session.state" and n.get("state") == "closed"
+    ]
+    ctx.check(
+        "AWP-CTL-009",
+        reasons == ["protocol_error"],
+        f"session.state closed with reasons {reasons}, not protocol_error",
     )
-    ctx.check("AWP-CTL-009", closed, "the session stayed open after AWP_INTEGER_RANGE")
     if not fut.done():
         fut.cancel()
 

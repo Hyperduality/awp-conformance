@@ -32,16 +32,18 @@ jobs:
       fail-fast: false
       matrix:
         include:
-          - { name: streaming, mode: streaming, serve: "", claim: "" }
-          - { name: lockstep, mode: lockstep, serve: "", claim: "" }
+          - { name: streaming, mode: streaming, serve: "", claim: "", fixture: awp-sim.json }
+          - { name: lockstep, mode: lockstep, serve: "", claim: "", fixture: awp-sim.json }
           - name: streaming, every feature, ws stream
             mode: streaming
-            serve: --features task,approval,blend,transfer,servo --stream-binding ws --approver-token conformance-approver --approval-timeout-ms 3000
+            serve: --features task,approval,blend,transfer,servo --stream-binding ws --approver-token awp-sim-approver --approval-timeout-ms 3000
             claim: ""
+            fixture: awp-sim-features.json
           - name: lockstep, every feature, sim profile
             mode: lockstep
-            serve: --features task,approval,blend,transfer,sim --approver-token conformance-approver --approval-timeout-ms 3000
+            serve: --features task,approval,blend,transfer,sim --approver-token awp-sim-approver --approval-timeout-ms 3000
             claim: --profile sim
+            fixture: awp-sim-features.json
     steps:
       - uses: actions/checkout@v7
         with:
@@ -55,7 +57,7 @@ jobs:
             --watchdog-ms 800 --heartbeat-ms 500 --reconnect-window-ms 4000 &
           export AWP_SIM_PID=$!
           sleep 2
-          sed 's#"audit_dir": "awp-audit"#"audit_dir": "'"$PWD"'/awp-audit"#' ../fixtures/awp-sim.json > fixture.json
+          sed 's#"audit_dir": "awp-audit"#"audit_dir": "'"$PWD"'/awp-audit"#' ../fixtures/${{ matrix.fixture }} > fixture.json
           uv run awp-conformance world ws://127.0.0.1:8710 --fixture fixture.json ${{ matrix.claim }} --out report
       - uses: actions/upload-artifact@v7
         if: always()
