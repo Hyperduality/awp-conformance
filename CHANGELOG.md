@@ -1,5 +1,18 @@
 # Changelog
 
+## 0.1.0a7
+
+Targets specification revision `0.1-draft.10`.
+
+- AWP-TIM-014: the new `barrier-calls` test runs on barrier worlds. A second `world.tick` while one is pending must fail with `AWP_BUSY`. A call with `count` 2 stays pending while another session's call with `count` 1 is answered, and both are answered together at the second advance. Closing a session releases a call it was holding back.
+- AWP-MA-005 allows at most one `tick` holder under `any_session`, as draft 10 states. With no holder, each session's `world.tick` must still be refused with `AWP_TICK_NOT_AUTHORIZED`.
+- AWP-EVT-004, checked on every session: `e_stop_engaged`, `e_stop_released`, `envelope_violation`, `safe_state_entered`, `safe_state_exited`, and `embodiment_transferred` must name a declared embodiment in `detail.embodiment`. In streaming, `multi-bind` lets the watchdog fire on a session bound to the group and expects one `safe_state_entered` per embodiment.
+- AWP-EMB-005: in a multi-bind session, a submission without `embodiment_id` must fail with `-32602`, and one naming a member that does not offer the type with `AWP_FORBIDDEN`.
+- AWP-EMB-003: a takeover naming `embodiments` must fail with `AWP_EMBODIMENT_UNAVAILABLE`, and `embodiment_transferred` must name the transferred embodiment.
+- AWP-CMD-009 (warning): a live stream's `action.status` carries `stream` at least once per second.
+- AWP-ROB-008 (warning): a world claiming the robotics profile advertises `capabilities.command_channels`.
+- AWP-DAT-006 fails on a stream frame carrying a reserved extension type (`0x00`, `0x04`–`0x7F`).
+
 ## 0.1.0a6
 
 Targets specification revision `0.1-draft.9`.

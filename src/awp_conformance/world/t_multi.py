@@ -5,7 +5,7 @@ from __future__ import annotations
 import asyncio
 from typing import Any
 
-from ..link import Link
+from ..link import Link, Reply
 from .context import Skip, WorldContext
 from .registry import world_test
 
@@ -137,35 +137,54 @@ async def isolation(ctx: WorldContext) -> None:
     await ctx.settle(a)
 
 
-def _group(ctx: WorldContext) -> list[str]:
-    """The members of a multi_bind_group of two or more, preferring the fixture embodiment's."""
-    groups: dict[str, list[str]] = {}
-    for e in ctx.embodiments:
-        if e.get("multi_bind_group"):
-            groups.setdefault(e["multi_bind_group"], []).append(e["id"])
-    bindable = [m for m in groups.values() if len(m) > 1]
-    return next((m for m in bindable if ctx.embodiment in m), bindable[0] if bindable else [])
-
-
 def _needs_group(ctx: WorldContext) -> str | None:
-    return None if _group(ctx) else "no multi_bind_group has two embodiments"
+    return None if ctx.bind_group else "no multi_bind_group has two embodiments"
 
 
-@world_test("multi-bind", ["AWP-EMB-005", "AWP-MAN-007", "AWP-ACT-003"], needs=_needs_group)
+@world_test(
+    "multi-bind",
+    ["AWP-EMB-005", "AWP-MAN-007", "AWP-ACT-003", "AWP-EVT-004"],
+    needs=_needs_group,
+)
 async def multi_bind(ctx: WorldContext) -> None:
-    members = _group(ctx)
+    members = ctx.bind_group
     moves = len(ctx.fixture.moves) >= 2
+    acts = moves and ctx.embodiment in members
+    quiet = acts and not ctx.lockstep and ctx.watchdog_ms is not None
     link = await ctx.connect("together")
     reply = await ctx.open(link, embodiment=None, embodiments=members, subscribe=[])
     ctx.check("AWP-EMB-005", reply.ok, f"binding {members} together answered {reply.error}")
     ctx.check("AWP-MAN-007", reply.ok, f"session.open naming embodiments {members} failed")
-    if reply.ok and moves and ctx.embodiment in members:
-        _, submitted = await ctx.submit(link, ctx.next_move(), embodiment_id=ctx.embodiment)
+    if reply.ok and acts:
+        spec = ctx.next_move()
+        _, bare = await ctx.submit(link, spec)
+        ctx.check(
+            "AWP-EMB-005",
+            bare.code == -32602,
+            f"a submission without embodiment_id answered {bare.error or bare.result}",
+        )
+        lacking = next(
+            (m for m in members if spec.type not in ctx.embodiment_decl(m).get("action_types", [])),
+            None,
+        )
+        if lacking is not None:
+            _, wrong = await ctx.submit(link, spec, embodiment_id=lacking)
+            ctx.check(
+                "AWP-EMB-005",
+                wrong.code == 4001,
+                f"{spec.type} for {lacking}, which does not offer it, answered "
+                f"{wrong.error or wrong.result}",
+            )
+        link.heartbeat = not quiet  # the submission is the last message before the watchdog
+        action_id, submitted = await ctx.submit(link, spec, embodiment_id=ctx.embodiment)
         ctx.check(
             "AWP-EMB-005",
             submitted.ok,
             f"a submission naming embodiment_id {ctx.embodiment} answered {submitted.error}",
         )
+        if quiet and submitted.ok and await ctx.wait_state(link, action_id, ["executing"], 3.0):
+            await _safe_state_per_embodiment(ctx, link, members)
+        link.heartbeat = True
         await ctx.settle(link)
     await ctx.close(link)
     outsider = next((e["id"] for e in ctx.embodiments if e["id"] not in members), None)
@@ -190,6 +209,26 @@ async def multi_bind(ctx: WorldContext) -> None:
             reply.code == 4001,
             f"a submission naming the unbound {unbound} answered {reply.error or reply.result}",
         )
+
+
+async def _safe_state_per_embodiment(ctx: WorldContext, link: Link, members: list[str]) -> None:
+    """Quiet until the watchdog fires: safe-state entry is reported once per bound embodiment."""
+    assert ctx.watchdog_ms is not None
+
+    def entered() -> list[str]:
+        return [
+            str((e.get("detail") or {}).get("embodiment"))
+            for e in link.tracker.events
+            if e["event"] == "safe_state_entered"
+        ]
+
+    await link.wait_for(lambda: len(entered()) >= len(members), ctx.watchdog_ms / 1000 + 3)
+    await asyncio.sleep(0.2)  # a duplicate would follow at once
+    ctx.check(
+        "AWP-EVT-004",
+        sorted(entered()) == sorted(members),
+        f"safe-state entry of a session bound to {members} was reported for {entered()}",
+    )
 
 
 @world_test("embodiment-binding", ["AWP-MA-003", "AWP-EMB-001"])
@@ -249,8 +288,8 @@ async def _any_session(ctx: WorldContext, a: Link, b: Link) -> None:
     holders = [link for link in (a, b) if "tick" in link.tracker.granted("admin")]
     ctx.check(
         "AWP-MA-005",
-        len(holders) == 1,
-        f"tick granted to {len(holders)} of two lockstep sessions under any_session",
+        len(holders) <= 1,
+        "tick granted to both lockstep sessions under any_session",
     )
     # Before any advance, while both sessions still know the current tick.
     for link in (a, b):
@@ -262,7 +301,7 @@ async def _any_session(ctx: WorldContext, a: Link, b: Link) -> None:
                 f"world.tick without the tick grant answered {reply.error or reply.result}",
             )
     if len(holders) != 1:
-        return
+        return  # with no holder, nothing advances
     reply = await ctx.advance(holders[0])
     ctx.check("AWP-TIM-012", reply.ok, f"world.tick with the tick grant answered {reply.error}")
     tick = (reply.result or {}).get("tick")
@@ -317,14 +356,90 @@ async def _barrier(ctx: WorldContext, a: Link, b: Link) -> None:
         await _advance_reached(ctx, link, tick + 1)
 
 
-@world_test("tick-authority", ["AWP-TIM-012", "AWP-MA-005", "AWP-TIM-003"], mode="lockstep")
-async def tick_authority(ctx: WorldContext) -> None:
+async def _two_sessions(ctx: WorldContext, admin: list[str]) -> tuple[Link, Link]:
     other = _second_binding(ctx)
     if other is None:
         raise Skip("no second session can bind an embodiment")
-    barrier = ctx.manifest.get("tick_authority") == "barrier"
-    admin = [] if barrier else ["tick"]
     a = await ctx.session("first", admin=admin)
     subscribe = [{"channel": c} for c in ctx.observation_channels(other)]
     b = await ctx.session("second", embodiment=other, subscribe=subscribe, admin=admin)
+    return a, b
+
+
+@world_test("tick-authority", ["AWP-TIM-012", "AWP-MA-005", "AWP-TIM-003"], mode="lockstep")
+async def tick_authority(ctx: WorldContext) -> None:
+    barrier = ctx.manifest.get("tick_authority") == "barrier"
+    a, b = await _two_sessions(ctx, [] if barrier else ["tick"])
     await (_barrier(ctx, a, b) if barrier else _any_session(ctx, a, b))
+
+
+def _needs_barrier(ctx: WorldContext) -> str | None:
+    if ctx.manifest.get("tick_authority") != "barrier":
+        return "tick_authority is not barrier"
+    return None if _second_binding(ctx) else "no second session can bind an embodiment"
+
+
+async def _answer(call: asyncio.Future[Reply], timeout: float) -> Reply | None:
+    try:
+        return await asyncio.wait_for(asyncio.shield(call), timeout)
+    except TimeoutError:
+        return None
+
+
+def _told(reply: Reply | None) -> str:
+    return "nothing" if reply is None else str(reply.error or reply.result)
+
+
+@world_test("barrier-calls", ["AWP-TIM-014"], mode="lockstep", needs=_needs_barrier)
+async def barrier_calls(ctx: WorldContext) -> None:
+    a, b = await _two_sessions(ctx, [])
+    tick = a.tracker.tick
+    if tick is None or b.tracker.tick != tick:
+        raise Skip("the two sessions do not share a tick")
+
+    pending = a.start("world.tick", {"expected_tick": tick})
+    again = await _answer(a.start("world.tick", {"expected_tick": tick}), 2.0)
+    if not ctx.check(
+        "AWP-TIM-014",
+        again is not None and again.code == 3002,
+        f"a second world.tick while one is pending answered {_told(again)}",
+    ):
+        return
+    await ctx.advance(b)
+    first = await _answer(pending, 5.0)
+    if not ctx.check(
+        "AWP-TIM-014",
+        first is not None and first.ok,
+        f"the pending call, once the other session called, answered {_told(first)}",
+    ):
+        return
+
+    tick += 1
+    two = a.start("world.tick", {"expected_tick": tick, "count": 2})
+    one = await ctx.advance(b)
+    await asyncio.sleep(0.3)
+    if not ctx.check(
+        "AWP-TIM-014",
+        one.get("tick") == tick + 1 and not two.done(),
+        f"count 2 against count 1: the count-1 call answered {_told(one)}, and the count-2 call "
+        f"is {'answered' if two.done() else 'pending'}",
+    ):
+        return
+    last = await ctx.advance(b)
+    both = await _answer(two, 5.0)
+    if not ctx.check(
+        "AWP-TIM-014",
+        last.get("tick") == tick + 2 and both is not None and both.get("tick") == tick + 2,
+        f"the second advance answered {_told(last)} and the count-2 call {_told(both)}",
+    ):
+        return
+
+    tick += 2
+    left = a.start("world.tick", {"expected_tick": tick})
+    await ctx.close(b)
+    released = await _answer(left, 5.0)
+    ctx.check(
+        "AWP-TIM-014",
+        released is not None and released.get("tick") == tick + 1,
+        f"with the other session closed, the pending call answered {_told(released)}",
+    )

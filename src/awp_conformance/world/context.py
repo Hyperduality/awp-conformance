@@ -88,6 +88,16 @@ class WorldContext:
             return list(self.fixture.subscribe)
         return self.observation_channels(self.embodiment)
 
+    @property
+    def bind_group(self) -> list[str]:
+        """The members of a multi_bind_group of two or more, preferring the fixture embodiment's."""
+        groups: dict[str, list[str]] = {}
+        for e in self.embodiments:
+            if e.get("multi_bind_group"):
+                groups.setdefault(e["multi_bind_group"], []).append(e["id"])
+        bindable = [m for m in groups.values() if len(m) > 1]
+        return next((m for m in bindable if self.embodiment in m), bindable[0] if bindable else [])
+
     def observation_channels(self, embodiment: str) -> list[str]:
         """The observation channels `embodiment` can read, in the manifest's order."""
         declared = {c["id"] for c in self.manifest.get("observation_channels", [])}

@@ -43,6 +43,7 @@ class Scope:
             "scene channel offered": any(c.get("id") == "scene" for c in channels),
             "multiple sessions": "multiple sessions" in self.facts,
             "stream endpoints offered": "stream endpoints offered" in self.facts,
+            "tick_authority barrier": m.get("tick_authority") == "barrier",
         }
         return known.get(condition)
 

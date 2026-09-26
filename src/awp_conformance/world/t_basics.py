@@ -34,6 +34,7 @@ from .registry import world_test
         "AWP-TIM-007",
         "AWP-CMD-002",
         "AWP-SES-001",
+        "AWP-ROB-008",
     ],
 )
 async def manifest(ctx: WorldContext) -> None:
@@ -70,6 +71,12 @@ async def manifest(ctx: WorldContext) -> None:
         ctx.check("AWP-MAN-005", bool(m.get("command_channels")), "command_channels list missing")
     else:
         ctx.na("AWP-MAN-005", "command_channels not advertised")
+    if "robotics" in ctx.profiles:
+        ctx.should(
+            "AWP-ROB-008",
+            bool(caps.get("command_channels")),
+            "a robotics-profile world does not advertise capabilities.command_channels",
+        )
     for d in m.get("action_schemas", []):
         if "command_channel" in d:
             ctx.check(

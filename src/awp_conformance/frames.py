@@ -33,6 +33,7 @@ class Decoded:
     payload: bytes
     ext: dict[str, int] = field(default_factory=dict)
     vendor: list[tuple[int, bytes]] = field(default_factory=list)
+    reserved: list[int] = field(default_factory=list)  # never sent (AWP-DAT-006)
 
     @property
     def keyframe(self) -> bool:
@@ -72,6 +73,7 @@ def decode(data: bytes) -> Decoded:
     offset = HEADER.size
     ext: dict[str, int] = {}
     vendor: list[tuple[int, bytes]] = []
+    reserved: list[int] = []
     if flags & 0x04:
         if len(data) < offset + 2:
             raise FrameError("AWP_MALFORMED", "has_extensions without ext_len")
@@ -100,6 +102,8 @@ def decode(data: bytes) -> Decoded:
                 )
             elif kind >= 0x80:
                 vendor.append((kind, bytes(value)))
+            else:
+                reserved.append(kind)
             offset += 2 + length
     if offset + payload_len != len(data):
         raise FrameError("AWP_MALFORMED", f"payload_len {payload_len} does not fit the frame")
@@ -112,6 +116,7 @@ def decode(data: bytes) -> Decoded:
         payload=bytes(data[offset:]),
         ext=ext,
         vendor=vendor,
+        reserved=reserved,
     )
 
 

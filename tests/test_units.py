@@ -63,6 +63,16 @@ def test_frame_decoder_matches_every_vector():
         assert {k: got[k] for k in v["expect"]} == v["expect"], v["name"]
 
 
+def test_frame_decoder_reports_reserved_extension_types():
+    import struct
+
+    from awp_conformance.frames import HEADER, decode
+
+    ext = bytes((0x05, 1, 0xAA))
+    data = HEADER.pack(b"AWPF", 1, 0x04, 1, 1, 0, 1) + struct.pack("<H", len(ext)) + ext + b"x"
+    assert decode(data).reserved == [0x05]
+
+
 def test_transition_table():
     assert spec.transition_problem("accepted", "executing", None) is None
     assert spec.transition_problem("executing", "cancelled", None) is not None  # through cancelling

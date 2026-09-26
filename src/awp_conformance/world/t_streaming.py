@@ -149,7 +149,6 @@ async def watchdog(ctx: WorldContext) -> None:
     )
     action_id = await ctx.running(link)
     last_sent = now_ns()  # the submission was the last message this agent originated
-    link.heartbeat = False
     entered = await link.wait_note(
         lambda m: m.get("method") == "world.event" and m["params"]["event"] == "safe_state_entered",
         watchdog_ms / 1000 + 3,
@@ -182,7 +181,6 @@ async def watchdog(ctx: WorldContext) -> None:
         link.connected and link.tracker.states[-1:] != ["suspended"],
         "session lost while pongs answered",
     )
-    link.heartbeat = True
     await ctx.running(link)
     exited = any(e["event"] == "safe_state_exited" for e in link.tracker.events)
     ctx.check("AWP-SAF-008", exited, "no safe_state_exited when a new action began executing")
