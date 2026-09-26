@@ -1,5 +1,22 @@
 # Changelog
 
+## 0.1.0a6
+
+Targets specification revision `0.1-draft.9`.
+
+- A per-tick channel is one granted with `rate_hz: null`, as draft 9 defines it. A lockstep channel granted at a rate is no longer expected to deliver a frame per advance, after `session.ready`, or after a reset (AWP-TIM-003, AWP-TIM-009, AWP-DAT-003, AWP-PRM-006).
+- `tick-authority`:
+  - Under `any_session`, exactly one of two bound lockstep sessions must hold `tick`. The session without it must be refused with `AWP_TICK_NOT_AUTHORIZED`, and the holder's advance must reach both sessions' per-tick channels (AWP-MA-005, AWP-TIM-012, AWP-TIM-003).
+  - Under `barrier`, two sessions that open at different ticks fail AWP-TIM-012 instead of skipping the test. The advance's frames can arrive after the `world.tick` result.
+- `embodiment-binding` binds every embodiment twice, the fixture's included, and AWP-EMB-001 is `n/a` only when every embodiment declares `shared_control`. `open-refusals` no longer covers AWP-EMB-001 or AWP-MA-003.
+- `multi-bind` tests binding outside the group and naming an unbound embodiment even when the group itself cannot be bound. It no longer checks the granted action types under AWP-EMB-005.
+- `isolation` expects frames only on channels with a rate (streaming) or on per-tick channels (lockstep), and waits long enough for the slowest one. A world whose channels send only on change no longer fails AWP-MA-004.
+- `reset`:
+  - A manifest with no `initial_states` fails AWP-SIM-001 even when reset is not granted. AWP-SIM-001 is `untested` when the world does not grant reset.
+  - Fresh frames after the reset are checked on every session, not only the initiator's.
+- Without `subscribe` in the fixture, a session subscribes to the embodiment's observation channels only.
+- `fixtures/awp-sim.json` no longer carries `approver_token` or `servo`. They are in `fixtures/awp-sim-features.json`.
+
 ## 0.1.0a5
 
 Targets specification revision `0.1-draft.9`.

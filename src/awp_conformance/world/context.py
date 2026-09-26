@@ -68,22 +68,30 @@ class WorldContext:
         return {d["type"]: d for d in self.manifest.get("action_schemas", [])}
 
     @property
+    def embodiments(self) -> list[dict[str, Any]]:
+        return list(self.manifest.get("embodiments") or [])
+
+    def embodiment_decl(self, embodiment: str) -> dict[str, Any]:
+        return next((e for e in self.embodiments if e["id"] == embodiment), {})
+
+    @property
     def embodiment(self) -> str:
         if self.fixture.embodiment:
             return self.fixture.embodiment
-        embodiments = self.manifest.get("embodiments") or []
-        if not embodiments:
+        if not self.embodiments:
             raise Skip("the manifest declares no embodiment")
-        return str(embodiments[0]["id"])
+        return str(self.embodiments[0]["id"])
 
     @property
     def channels(self) -> list[str]:
         if self.fixture.subscribe is not None:
             return list(self.fixture.subscribe)
-        for e in self.manifest.get("embodiments", []):
-            if e["id"] == self.embodiment:
-                return list(e.get("channels", []))
-        return []
+        return self.observation_channels(self.embodiment)
+
+    def observation_channels(self, embodiment: str) -> list[str]:
+        """The observation channels `embodiment` can read, in the manifest's order."""
+        declared = {c["id"] for c in self.manifest.get("observation_channels", [])}
+        return [c for c in self.embodiment_decl(embodiment).get("channels", []) if c in declared]
 
     def manifest_channel(self, name: str) -> dict[str, Any]:
         return next(

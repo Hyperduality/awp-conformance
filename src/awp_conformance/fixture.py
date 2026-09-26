@@ -26,9 +26,9 @@ class ActionSpec:
 class Fixture:
     embodiment: str | None = None
     subscribe: list[str] | None = None
-    # Two or more extended actions in one concurrency group. Alternating between them always
-    # produces motion, and each must run for at least `extended_min_ms` (streaming) or
-    # `extended_min_ticks` (lockstep).
+    # Two or more extended actions in one concurrency group, each running for at least
+    # `extended_min_ms` (streaming) or `extended_min_ticks` (lockstep). With three whose targets
+    # are not on one line, one target is always away from wherever the embodiment is.
     moves: list[ActionSpec] = field(default_factory=list)
     extended_min_ms: int = 600
     extended_min_ticks: int = 5
@@ -38,7 +38,7 @@ class Fixture:
     invalid: ActionSpec | None = None
     outside_envelope: ActionSpec | None = None
     initial_state: str | None = None
-    # Shell commands run by the suite; `{pid}` and environment variables are expanded by the shell.
+    # Shell commands run by the suite; the shell expands environment variables in them.
     operator: dict[str, str] = field(default_factory=dict)
     audit_dir: str | None = None
     max_wait_s: float = 45.0

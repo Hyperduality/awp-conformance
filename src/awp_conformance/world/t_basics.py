@@ -374,7 +374,7 @@ async def session_open(ctx: WorldContext) -> None:
     if ctx.lockstep:
         tick = r.get("tick")
         ctx.check("AWP-TIM-009", isinstance(tick, int), "lockstep session.ready carries tick")
-        for ch in link.tracker.observation_channels().values():
+        for ch in link.tracker.per_tick_channels().values():
             ctx.check(
                 "AWP-TIM-009", ch.frames >= 1, f"{ch.name}: no initial frame after session.ready"
             )
@@ -409,7 +409,7 @@ async def one_session(ctx: WorldContext) -> None:
     )
 
 
-@world_test("open-refusals", ["AWP-NEG-002", "AWP-EMB-001", "AWP-MA-003"])
+@world_test("open-refusals", ["AWP-NEG-002"])
 async def open_refusals(ctx: WorldContext) -> None:
     models = set(ctx.manifest.get("time_models", []))
     link = await ctx.connect()
@@ -427,22 +427,6 @@ async def open_refusals(ctx: WorldContext) -> None:
         reply.code == 2001,
         f"unknown embodiment answered {reply.error or reply.result}",
     )
-    holder = await ctx.session("holder")
-    rival = await ctx.connect("rival")
-    reply = await rival.call("session.open", ctx.open_params())
-    shared = any(
-        e.get("shared_control") for e in ctx.manifest["embodiments"] if e["id"] == ctx.embodiment
-    )
-    if shared:
-        ctx.na("AWP-EMB-001", "the embodiment declares shared_control")
-    else:
-        ctx.check(
-            "AWP-EMB-001",
-            reply.code == 2001,
-            f"bound embodiment answered {reply.error or reply.result}",
-        )
-        ctx.check("AWP-MA-003", reply.code == 2001, "an embodiment bound to two sessions")
-    await ctx.close(holder)
 
 
 @world_test("observer-session", ["AWP-EMB-004", "AWP-PRM-001", "AWP-TIM-012"])
@@ -468,12 +452,10 @@ async def observer(ctx: WorldContext) -> None:
 @world_test("grants", ["AWP-PRM-001", "AWP-ACT-003", "AWP-NEG-003"])
 async def grants(ctx: WorldContext) -> None:
     moves = {m.type for m in ctx.moves()}
-    offered = next(
-        e.get("action_types", []) for e in ctx.manifest["embodiments"] if e["id"] == ctx.embodiment
-    )
+    offered = ctx.embodiment_decl(ctx.embodiment).get("action_types", [])
     others = [t for t in offered if t not in moves]
     link = await ctx.session(action_types=others)
-    granted = link.tracker.ready["granted"]["action_types"] if link.tracker.ready else []
+    granted = link.tracker.granted("action_types")
     ctx.check("AWP-NEG-003", not set(granted) & moves, f"granted {granted}, asked {others}")
     _, reply = await ctx.submit(link, ctx.next_move())
     ctx.check(
@@ -488,7 +470,7 @@ async def grants(ctx: WorldContext) -> None:
         reply.code == 4001,
         f"ungranted embodiment answered {reply.error or reply.result}",
     )
-    if "reset" not in (link.tracker.ready or {}).get("granted", {}).get("admin", []):
+    if "reset" not in link.tracker.granted("admin"):
         reset = await link.call("world.reset", {})
         ctx.check(
             "AWP-PRM-001",

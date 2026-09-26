@@ -73,9 +73,7 @@ async def resume_replay(ctx: WorldContext) -> None:
     )
     if ctx.lockstep:
         tick = reply.get("tick")
-        per_tick = {
-            g["channel_id"] for g in reply["granted"]["channels"] if g.get("rate_hz") is None
-        }
+        per_tick = set(tracker.per_tick_channels())
 
         def resynced() -> set[int]:
             return {
