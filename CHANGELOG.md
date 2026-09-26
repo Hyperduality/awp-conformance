@@ -1,5 +1,15 @@
 # Changelog
 
+## 0.1.0a5
+
+Targets specification revision `0.1-draft.9`.
+
+- Worlds with several embodiments are tested:
+  - `multi-bind` binds a `multi_bind_group` in one session and submits with `embodiment_id`. Binding outside the group, or naming an unbound embodiment, must be refused (AWP-EMB-005, AWP-MAN-007, AWP-ACT-003).
+  - `embodiment-binding` binds each embodiment twice. A shared one must allow it and name its arbitration; an exclusive one must refuse (AWP-MA-003, AWP-EMB-001).
+  - `tick-authority` holds two lockstep sessions. Under `barrier`, one call must not advance the world, and both must be answered with the same tick. Under `any_session`, at most one of them gets `tick` (AWP-TIM-012, AWP-MA-005).
+- A world that declared a `multi_bind_group` was reported untested on AWP-EMB-005.
+
 ## 0.1.0a4
 
 Targets specification revision `0.1-draft.9`.

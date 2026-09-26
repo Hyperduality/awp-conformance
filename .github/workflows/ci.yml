@@ -36,12 +36,12 @@ jobs:
           - { name: lockstep, mode: lockstep, serve: "", claim: "", fixture: awp-sim.json }
           - name: streaming, every feature, ws stream
             mode: streaming
-            serve: --features task,approval,blend,transfer,servo --stream-binding ws --approver-token awp-sim-approver --approval-timeout-ms 3000
+            serve: --features task,approval,blend,transfer,servo,gripper --stream-binding ws --approver-token awp-sim-approver --approval-timeout-ms 3000
             claim: ""
             fixture: awp-sim-features.json
           - name: lockstep, every feature, sim profile
             mode: lockstep
-            serve: --features task,approval,blend,transfer,sim --approver-token awp-sim-approver --approval-timeout-ms 3000
+            serve: --features task,approval,blend,transfer,sim,gripper --approver-token awp-sim-approver --approval-timeout-ms 3000
             claim: --profile sim
             fixture: awp-sim-features.json
     steps:

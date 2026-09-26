@@ -66,7 +66,7 @@ APPROVER = "conformance-approver"
 
 
 async def featured(mode: Literal["streaming", "lockstep"], audit: Path) -> Server:
-    features = {"task", "approval", "blend", "transfer"} | (
+    features = {"task", "approval", "blend", "transfer", "gripper"} | (
         {"servo"} if mode == "streaming" else {"sim"}
     )
     extra: dict[str, Any] = FAST if mode == "streaming" else {}
