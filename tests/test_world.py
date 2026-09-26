@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import copy
 from typing import Any
 
 import pytest
@@ -149,6 +150,9 @@ FEATURE_TESTS = [
     "snapshot-restore",
     "command-channel",
     "ws-stream",
+    "multi-bind",
+    "embodiment-binding",
+    "tick-authority",
 ]
 
 
@@ -179,11 +183,14 @@ async def test_features_beyond_core_pass(tmp_path, mode):
         "AWP-APR-007",
         "AWP-PRE-004",
         "AWP-EMB-003",
+        "AWP-EMB-005",
+        "AWP-MAN-007",
+        "AWP-MA-003",
     }
     specific = (
         {"AWP-CMD-003", "AWP-CMD-005", "AWP-TRN-012"}
         if mode == "streaming"
-        else {"AWP-REP-001", "AWP-REP-002", "AWP-REP-003"}
+        else {"AWP-REP-001", "AWP-REP-002", "AWP-REP-003", "AWP-TIM-012"}
     )
     assert common | specific <= passed
 
@@ -204,3 +211,35 @@ async def test_catches_a_standing_approval_that_ignores_its_predicate(tmp_path):
         Standing.admits = original  # type: ignore[method-assign]
         await server.stop()
     assert "AWP-APR-004" in failures(run)
+
+
+async def test_catches_a_barrier_that_advances_on_one_call(tmp_path):
+    from awp_sim.world import World
+
+    from .conftest import featured
+
+    server = await featured("lockstep", tmp_path / "audit")
+    original = World.barrier
+    try:
+        World.barrier = property(lambda self: False)  # type: ignore[method-assign, assignment]
+        run = await run_world(server.url, sim_fixture(tmp_path / "audit"), only=["tick-authority"])
+    finally:
+        World.barrier = original  # type: ignore[method-assign]
+        await server.stop()
+    assert "AWP-TIM-012" in failures(run)
+
+
+async def test_catches_an_exclusive_embodiment_bound_twice(tmp_path):
+    from .conftest import featured
+
+    server = await featured("streaming", tmp_path / "audit")
+    try:
+        declared = copy.deepcopy(server.world.manifest)
+        for e in declared["embodiments"]:  # the world still lets several sessions bind it
+            e.pop("shared_control", None)
+            e.pop("arbitration", None)
+        server.world.manifest = declared
+        run = await run_world(server.url, sim_fixture(), only=["embodiment-binding"])
+    finally:
+        await server.stop()
+    assert {"AWP-MA-003", "AWP-EMB-001"} <= set(failures(run))
