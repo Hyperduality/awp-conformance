@@ -59,7 +59,8 @@ async def advance_ordering(ctx: WorldContext) -> None:
         if line["from"] == "world" and line["msg"].get("id") == reply.id
     )
     before, after = lines[:result_at], lines[result_at + 1 :]
-    for ch in link.tracker.observation_channels().values():
+    per_tick = link.tracker.per_tick_channels()
+    for ch in per_tick.values():
         ticks = [
             line["msg"]["params"].get("tick")
             for line in before
@@ -74,15 +75,23 @@ async def advance_ordering(ctx: WorldContext) -> None:
     late = [
         line
         for line in after
-        if line["msg"].get("method") in ("obs.frame", "action.status", "world.event")
+        if line["msg"].get("method") in ("action.status", "world.event")
+        or (
+            line["msg"].get("method") == "obs.frame"
+            and line["msg"]["params"]["channel_id"] in per_tick
+        )
     ]
     ctx.check("AWP-TIM-003", not late, "an advance's frames or statuses followed its result")
-    frames = [line for line in before if line["msg"].get("method") == "obs.frame"]
-    per_tick = len(link.tracker.observation_channels())
+    frames = [
+        line
+        for line in before
+        if line["msg"].get("method") == "obs.frame"
+        and line["msg"]["params"]["channel_id"] in per_tick
+    ]
     ctx.check(
         "AWP-DAT-003",
-        len(frames) == 3 * per_tick,
-        f"{len(frames)} frames for 3 advances on {per_tick} channels",
+        len(frames) == 3 * len(per_tick),
+        f"{len(frames)} frames for 3 advances on {len(per_tick)} per-tick channels",
     )
     await ctx.settle(link)
 
@@ -156,10 +165,7 @@ async def lockstep_clock(ctx: WorldContext) -> None:
 async def determinism(ctx: WorldContext) -> None:
     initial = ctx.fixture.initial_state or (ctx.manifest.get("initial_states") or [None])[0]
     link = await ctx.session(admin=["reset"])
-    if (
-        "reset" not in (link.tracker.ready or {}).get("granted", {}).get("admin", [])
-        or initial is None
-    ):
+    if "reset" not in link.tracker.granted("admin") or initial is None:
         ctx.results.mark_untested("AWP-TIM-004", "needs world.reset to compare two runs")
         return
     move = ctx.moves()[0]

@@ -35,10 +35,14 @@ A manifest declares action types but not which parameter values make an action r
 
 | Key | Meaning |
 |---|---|
-| `moves` | Three or more extended actions in one concurrency group, at targets not on one line, each lasting at least `extended_min_ms` (streaming) or `extended_min_ticks` advances (lockstep). The suite always picks a target the embodiment is not near |
+| `embodiment` | The embodiment to bind (default: the manifest's first) |
+| `subscribe` | The channels to subscribe to (default: the embodiment's observation channels) |
+| `moves` | Two or more extended actions in one concurrency group, each lasting at least `extended_min_ms` (default 600) in streaming or `extended_min_ticks` advances (default 5) in lockstep. With three at targets not on one line, the suite can always pick a target the embodiment is not near |
+| `instant` | An action to submit quickly several times, for the admission rate limit (default: a move) |
 | `long_params` | Params merged into a move so that it outlasts its type's `max_duration_ms`, for AWP-ACT-008 when the moves end sooner |
 | `invalid` | Params that fail the type's schema (generated from the schema when absent) |
 | `outside_envelope` | Params outside a declared envelope |
+| `initial_state` | The state `world.reset` returns to (default: the manifest's first `initial_states` entry) |
 | `operator` | Shell commands that engage and release the e-stop |
 | `audit_dir` | Where the world writes its audit log, if the suite can read it |
 | `max_wait_s` | The longest single wait the suite does (default 45); `--slow` lifts it |
@@ -46,7 +50,7 @@ A manifest declares action types but not which parameter values make an action r
 | `approval_action` | The action to submit for approval (default: the first such type, with empty params) |
 | `servo` | For command channels: `{ "action": {type, params}, "setpoint": {...}, "violation": {...} }` |
 
-Beyond Core, the suite tests what the world offers: the `ws` stream binding, task, approval and standing approvals, blend, transfer, seeding, snapshots and replay, and command channels. `--profile sim` adds the sim profile to the claim.
+Beyond Core, the suite tests what the world offers: the `ws` stream binding, task, approval and standing approvals, blend, transfer, seeding, snapshots and replay, command channels, embodiments bound together through a `multi_bind_group`, `shared_control`, and the `barrier` tick authority. `--profile sim` adds the sim profile to the claim.
 
 `fixtures/awp-sim.json` is the fixture for the reference world, and `fixtures/awp-sim-features.json` adds the approver token and servo entry for `awp-sim serve --features ... --approver-token awp-sim-approver`.
 

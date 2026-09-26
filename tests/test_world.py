@@ -243,3 +243,69 @@ async def test_catches_an_exclusive_embodiment_bound_twice(tmp_path):
     finally:
         await server.stop()
     assert {"AWP-MA-003", "AWP-EMB-001"} <= set(failures(run))
+
+
+def _any_session(server: Any) -> None:
+    declared = copy.deepcopy(server.world.manifest)
+    declared["tick_authority"] = "any_session"
+    server.world.manifest = declared
+
+
+async def test_any_session_tick_authority_passes(tmp_path):
+    from .conftest import featured
+
+    server = await featured("lockstep", tmp_path / "audit")
+    world = server.world
+    _any_session(server)
+    grant, tick = world._may_grant_admin, world._rpc_world_tick
+
+    def one_holder(op, embodiments):
+        taken = op == "tick" and any("tick" in s.admin for s in world.sessions.values())
+        return grant(op, embodiments) and not taken
+
+    def gated(c, rid, p, now):
+        if "tick" not in c.session.admin:
+            raise AwpError(ErrorCode.TICK_NOT_AUTHORIZED)
+        tick(c, rid, p, now)
+
+    world._may_grant_admin = one_holder  # type: ignore[method-assign]
+    world._rpc_world_tick = gated  # type: ignore[method-assign]
+    try:
+        run = await run_world(server.url, sim_fixture(), only=["tick-authority"])
+    finally:
+        await server.stop()
+    assert failures(run) == {}
+    passed = {f.requirement for f in run.results.findings if f.ok}
+    assert {"AWP-TIM-012", "AWP-MA-005", "AWP-TIM-003"} <= passed
+
+
+async def test_catches_tick_granted_to_two_sessions_under_any_session(tmp_path):
+    from .conftest import featured
+
+    server = await featured("lockstep", tmp_path / "audit")
+    _any_session(server)  # awp-sim grants tick to every bound lockstep session
+    try:
+        run = await run_world(server.url, sim_fixture(), only=["tick-authority"])
+    finally:
+        await server.stop()
+    assert "AWP-MA-005" in failures(run)
+
+
+async def test_catches_a_submission_for_an_unbound_embodiment(tmp_path):
+    from .conftest import featured
+
+    server = await featured("streaming", tmp_path / "audit")
+    world = server.world
+    original = world._embodiment_of
+
+    def ignoring(s, p):  # a single-embodiment session acts for its own, whatever it names
+        if len(s.embodiments) == 1:
+            p = {k: v for k, v in p.items() if k != "embodiment_id"}
+        return original(s, p)
+
+    world._embodiment_of = ignoring  # type: ignore[method-assign]
+    try:
+        run = await run_world(server.url, sim_fixture(), only=["multi-bind"])
+    finally:
+        await server.stop()
+    assert "AWP-ACT-003" in failures(run)

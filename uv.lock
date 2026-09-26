@@ -129,8 +129,8 @@ dependencies = [
 
 [[package]]
 name = "awp-sim"
-version = "0.1.0a4"
-source = { git = "https://github.com/Hyperduality/awp-sim?branch=main#f074c755ce0960ff4252ba2dc803b3ba33f5167d" }
+version = "0.1.0a5"
+source = { git = "https://github.com/Hyperduality/awp-sim?branch=main#cc87c5338ef1f4b736c4900e6d3d46f1acb2b0cc" }
 dependencies = [
     { name = "awp-python" },
     { name = "jsonschema" },

@@ -13,7 +13,7 @@ from typing import Any
 from ..fixture import ActionSpec
 from ..link import Link, now_ns
 from .context import WorldContext
-from .registry import world_test
+from .registry import Needs, world_test
 from .t_operator import _audit_files
 
 TASK = {
@@ -25,8 +25,11 @@ def _caps(ctx: WorldContext) -> dict[str, Any]:
     return dict(ctx.manifest.get("capabilities") or {})
 
 
-def _needs_cap(key: str):  # type: ignore[no-untyped-def]
-    return lambda ctx: None if _caps(ctx).get(key) else f"capability {key} not advertised"
+def _needs_cap(key: str) -> Needs:
+    def needs(ctx: WorldContext) -> str | None:
+        return None if _caps(ctx).get(key) else f"capability {key} not advertised"
+
+    return needs
 
 
 # ---------------------------------------------------------------- task
@@ -453,7 +456,7 @@ async def seeding(ctx: WorldContext) -> None:
 )
 async def snapshot_restore(ctx: WorldContext) -> None:
     link = await ctx.session(admin=["snapshot", "restore"])
-    admin = (link.tracker.ready or {}).get("granted", {}).get("admin", [])
+    admin = link.tracker.granted("admin")
     if not {"snapshot", "restore"} <= set(admin):
         ctx.results.mark_untested("AWP-REP-002", f"snapshot and restore not granted ({admin})")
         return
@@ -522,9 +525,7 @@ async def command_channel(ctx: WorldContext) -> None:
     channel = ctx.decls[action.type]["command_channel"]
     ctx.check("AWP-CMD-001", ctx.mode == "streaming", "command channels outside streaming")
     link = await ctx.session()
-    grants = {
-        g["channel"]: g["channel_id"] for g in (link.tracker.ready or {})["granted"]["channels"]
-    }
+    grants = {g["channel"]: g["channel_id"] for g in link.tracker.granted("channels")}
     if not ctx.check(
         "AWP-CMD-001", channel in grants, f"{channel} was not granted with {action.type}"
     ):

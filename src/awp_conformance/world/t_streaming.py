@@ -16,9 +16,7 @@ async def stream_delivery(ctx: WorldContext) -> None:
     link = await ctx.session()
     before = len(link.notes)
     await asyncio.sleep(1.0)
-    observed = link.tracker.observation_channels()
-    granted = (link.tracker.ready or {})["granted"]["channels"]
-    rates = {g["channel_id"]: g["rate_hz"] for g in granted if g["channel_id"] in observed}
+    rates = {cid: c.rate_hz for cid, c in link.tracker.observation_channels().items()}
     counts: dict[int, int] = {}
     for _, m in link.notes[before:]:
         if m.get("method") == "obs.frame":

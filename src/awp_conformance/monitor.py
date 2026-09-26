@@ -95,6 +95,7 @@ class ChannelView:
     loss_class: str
     modality: str
     schema: Any
+    rate_hz: float | None = None  # None: per-tick in lockstep
     last_seq: int | None = None
     last_ts: int | None = None
     frames: int = 0
@@ -253,6 +254,7 @@ class SessionTracker:
                 continue
             old = current.get(cid)
             if old is not None and old.name == g.get("channel"):
+                old.rate_hz = g.get("rate_hz")
                 self.channels[cid] = old
                 continue
             self.channels[cid] = ChannelView(
@@ -261,6 +263,7 @@ class SessionTracker:
                 loss_class=declared.get("loss_class", "reliable"),
                 modality=declared.get("modality", ""),
                 schema=declared.get("schema"),
+                rate_hz=g.get("rate_hz"),
                 command=name in self.command_channels,
             )
         self.expect(
@@ -374,6 +377,13 @@ class SessionTracker:
 
     def observation_channels(self) -> dict[int, ChannelView]:
         return {cid: c for cid, c in self.channels.items() if not c.command}
+
+    def per_tick_channels(self) -> dict[int, ChannelView]:
+        return {cid: c for cid, c in self.observation_channels().items() if c.rate_hz is None}
+
+    def granted(self, kind: str) -> list[Any]:
+        """What session.open or session.resume granted: `admin`, `action_types`, or `channels`."""
+        return list(((self.ready or {}).get("granted") or {}).get(kind, []))
 
     def on_frame(self, p: dict[str, Any], binding: str = "inline") -> None:
         cid = p["channel_id"]

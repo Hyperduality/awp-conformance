@@ -12,13 +12,13 @@ from .context import WorldContext
 from .registry import world_test
 
 
-def _has_estop(ctx: WorldContext) -> str | None:
+def _needs_estop(ctx: WorldContext) -> str | None:
     if ctx.has_operator("estop_engage") and ctx.has_operator("estop_release"):
         return None
     return "no estop_engage / estop_release operator hooks in the fixture"
 
 
-@world_test("estop", ["AWP-EVT-002", "AWP-LIF-008"], needs=_has_estop)
+@world_test("estop", ["AWP-EVT-002", "AWP-LIF-008"], needs=_needs_estop)
 async def estop(ctx: WorldContext) -> None:
     link = await ctx.session()
     running = await ctx.running(link)
@@ -82,14 +82,14 @@ def _audit_files(directory: Path, session_id: str) -> list[Path]:
     ]
 
 
-def _has_audit(ctx: WorldContext) -> str | None:
+def _needs_audit(ctx: WorldContext) -> str | None:
     return None if ctx.fixture.audit_dir else "no audit_dir in the fixture"
 
 
 @world_test(
     "audit-log",
     ["AWP-AUD-001", "AWP-AUD-002", "AWP-AUD-003", "AWP-AUD-006", "AWP-AUD-007"],
-    needs=_has_audit,
+    needs=_needs_audit,
 )
 async def audit_log(ctx: WorldContext) -> None:
     link = await ctx.session()

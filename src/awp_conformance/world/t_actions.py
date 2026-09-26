@@ -8,7 +8,7 @@ import time
 from ..fixture import ActionSpec
 from ..spec import TERMINAL
 from .context import WorldContext
-from .registry import world_test
+from .registry import Needs, world_test
 
 
 def _policies(ctx: WorldContext, action_type: str) -> list[str]:
@@ -16,7 +16,7 @@ def _policies(ctx: WorldContext, action_type: str) -> list[str]:
     return [pre] if isinstance(pre, str) else list(pre)
 
 
-def _needs_policy(policy: str):  # type: ignore[no-untyped-def]
+def _needs_policy(policy: str) -> Needs:
     def needs(ctx: WorldContext) -> str | None:
         moves = ctx.fixture.moves
         if not moves:
