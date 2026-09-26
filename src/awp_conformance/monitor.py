@@ -42,6 +42,16 @@ EVENT_REGISTRY = frozenset(
 )
 REASON_REQUIRED = frozenset({"rejected", "failed", "cancelled"})
 JSON_MODALITIES = ("text/event+json", "proprio/json", "servo/json")
+EMBODIMENT_EVENTS = frozenset(
+    {
+        "e_stop_engaged",
+        "e_stop_released",
+        "envelope_violation",
+        "safe_state_entered",
+        "safe_state_exited",
+        "embodiment_transferred",
+    }
+)
 
 # The requirement a schema failure of a world message violates, by method and part.
 SCHEMA_REQ: dict[tuple[str, str], str] = {
@@ -114,6 +124,7 @@ class SessionTracker:
         self.mode = mode
         self.channels_by_name = {c["id"]: c for c in manifest.get("observation_channels", [])}
         self.command_channels = {c["id"]: c for c in manifest.get("command_channels", [])}
+        self.embodiments = {e["id"] for e in manifest.get("embodiments", [])}
         self.consumes: set[str] | None = None
 
         self.ready: dict[str, Any] | None = None
@@ -341,6 +352,13 @@ class SessionTracker:
                 p["event"] in EVENT_REGISTRY or p["event"].startswith("x-"),
                 f"world.event {p['event']} is neither registered nor x-<vendor>.",
             )
+            if p["event"] in EMBODIMENT_EVENTS:
+                named = (p.get("detail") or {}).get("embodiment")
+                self.expect(
+                    "AWP-EVT-004",
+                    named in self.embodiments,
+                    f"world.event {p['event']} names embodiment {named!r}",
+                )
         else:
             self.states.append(p["state"])
             if p["state"] == "closed":

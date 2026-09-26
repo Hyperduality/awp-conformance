@@ -540,6 +540,16 @@
   "text": "The audit log records inbound frames \u2014 payload or SHA-256 hash plus header \u2014 exactly as observation frames."
  },
  {
+  "id": "AWP-CMD-009",
+  "side": "world",
+  "applies": "streaming",
+  "gate": "capability:command_channels",
+  "test": "AWP-CMD-009 (warning)",
+  "level": "SHOULD",
+  "page": "/spec/loop/command-channels",
+  "text": "During `executing`, `progress` is not meaningful and MAY be omitted. Status updates instead carry a `stream` object (`&#123; frames_applied, last_seq,\u2026"
+ },
+ {
   "id": "AWP-CNF-001",
   "side": "world",
   "applies": "all",
@@ -941,6 +951,16 @@
   "level": "MUST",
   "page": "/spec/loop/events-and-errors",
   "text": "`world.event` notifications travel only on the control channel, where `status_seq` orders them against action statuses and resumption replays\u2026"
+ },
+ {
+  "id": "AWP-EVT-004",
+  "side": "world",
+  "applies": "all",
+  "gate": "core",
+  "test": "AWP-EVT-004",
+  "level": "MUST",
+  "page": "/spec/loop/events-and-errors",
+  "text": "`e_stop_engaged`, `e_stop_released`, `envelope_violation`, `safe_state_entered`, `safe_state_exited`, and `embodiment_transferred` concern an\u2026"
  },
  {
   "id": "AWP-GUI-001",
@@ -1584,6 +1604,16 @@
   "text": "Every `extended` action type a robotics-profile world declares MUST declare `max_duration_ms` (AWP-ACT-008), so that no extended motion outlives a\u2026"
  },
  {
+  "id": "AWP-ROB-008",
+  "side": "world",
+  "applies": "streaming",
+  "gate": "profile:robotics",
+  "test": "AWP-ROB-008 (warning)",
+  "level": "SHOULD",
+  "page": "/spec/profiles/robotics",
+  "text": "A robotics-profile world that offers servo- or torque-level control at 100\u20131000 Hz SHOULD offer it on command channels\u2026"
+ },
+ {
   "id": "AWP-SAF-001",
   "side": "both",
   "applies": "all",
@@ -1621,7 +1651,7 @@
   "test": "AWP-SAF-004",
   "level": "MUST",
   "page": "/spec/safety/safe-state",
-  "text": "When the watchdog expires, the world MUST, in order: (1) begin the declared `behavior` on every embodiment bound to the session; (2) transition\u2026"
+  "text": "When the watchdog expires, the world MUST, in order: (1) begin the declared `behavior` on every embodiment bound to the session, except a shared\u2026"
  },
  {
   "id": "AWP-SAF-005",
@@ -2062,6 +2092,16 @@
   "level": "MUST",
   "page": "/spec/loop/time-models",
   "text": "Session clock. In lockstep the session clock is simulated time: it MUST advance only with advances, by the same positive amount for every advance,\u2026"
+ },
+ {
+  "id": "AWP-TIM-014",
+  "side": "world",
+  "applies": "lockstep",
+  "gate": "feature:tick_authority barrier",
+  "test": "AWP-TIM-014",
+  "level": "MUST",
+  "page": "/spec/loop/time-models",
+  "text": "A session that leaves the barrier no longer holds it back, and a session bound while others wait joins it."
  },
  {
   "id": "AWP-TRN-001",

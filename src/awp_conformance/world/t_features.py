@@ -7,6 +7,7 @@ import asyncio
 import base64
 import hashlib
 import json
+from itertools import pairwise
 from pathlib import Path
 from typing import Any
 
@@ -369,6 +370,17 @@ async def transfer(ctx: WorldContext) -> None:
         return
     running = await ctx.running(holder)
     token = reply["transfer_token"]
+    if ctx.bind_group:
+        grab = await ctx.connect("grab")
+        params = ctx.open_params(
+            embodiment=None, embodiments=ctx.bind_group, takeover=True, transfer_token=token
+        )
+        refused = await grab.call("session.open", params)
+        ctx.check(
+            "AWP-EMB-003",
+            refused.code == 2001,
+            f"a takeover naming embodiments answered {refused.error or refused.result}",
+        )
     taker = await ctx.connect("taker")
     opened = await ctx.open(taker, takeover=True, transfer_token=token)
     ctx.check("AWP-EMB-003", opened.ok, f"takeover failed: {opened.error}")
@@ -386,6 +398,13 @@ async def transfer(ctx: WorldContext) -> None:
         2.0,
     )
     ctx.check("AWP-EMB-003", told is not None, "the previous holder was not told")
+    if told is not None:
+        moved = (told["params"].get("detail") or {}).get("embodiment")
+        ctx.check(
+            "AWP-EMB-003",
+            moved == ctx.embodiment,
+            f"embodiment_transferred names {moved}, not {ctx.embodiment}",
+        )
     _, refused = await ctx.submit(holder, ctx.next_move())
     ctx.check(
         "AWP-EMB-003",
@@ -513,6 +532,7 @@ async def _offset(link: Link) -> int:
         "AWP-CMD-006",
         "AWP-CMD-007",
         "AWP-CMD-008",
+        "AWP-CMD-009",
         "AWP-LIF-007",
         "AWP-SAF-006",
     ],
@@ -587,13 +607,28 @@ async def command_channel(ctx: WorldContext) -> None:
         "the session watchdog fired before the stream's own",
     )
     live = await ctx.running(link, action)
-    for _ in range(int(max(watchdog, 100) / 50) + 10):
+    began = now_ns()
+    for _ in range(max(int(max(watchdog, 100) / 50) + 10, 50)):
         await send(servo["setpoint"])
         await asyncio.sleep(0.05)
     ctx.check(
         "AWP-CMD-004",
         ctx.state(link, live) == "executing",
         f"a live stream is {ctx.state(link, live)}",
+    )
+    stamps = [
+        at
+        for at, m in link.notes
+        if m.get("method") == "action.status"
+        and m["params"].get("action_id") == live
+        and "stream" in m["params"]
+        and at >= began
+    ]
+    gaps = [(b - a) / 1e9 for a, b in pairwise([began, *stamps, now_ns()])]
+    ctx.should(
+        "AWP-CMD-009",
+        max(gaps) <= 1.25,
+        f"{max(gaps):.2f} s without a stream status while the stream was live",
     )
     await link.call("action.cancel", {"action_id": live})
     for _ in range(10):

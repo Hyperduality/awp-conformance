@@ -153,6 +153,7 @@ FEATURE_TESTS = [
     "multi-bind",
     "embodiment-binding",
     "tick-authority",
+    "barrier-calls",
 ]
 
 
@@ -186,11 +187,12 @@ async def test_features_beyond_core_pass(tmp_path, mode):
         "AWP-EMB-005",
         "AWP-MAN-007",
         "AWP-MA-003",
+        "AWP-EVT-004",
     }
     specific = (
         {"AWP-CMD-003", "AWP-CMD-005", "AWP-TRN-012"}
         if mode == "streaming"
-        else {"AWP-REP-001", "AWP-REP-002", "AWP-REP-003", "AWP-TIM-012"}
+        else {"AWP-REP-001", "AWP-REP-002", "AWP-REP-003", "AWP-TIM-012", "AWP-TIM-014"}
     )
     assert common | specific <= passed
 
@@ -309,3 +311,58 @@ async def test_catches_a_submission_for_an_unbound_embodiment(tmp_path):
     finally:
         await server.stop()
     assert "AWP-ACT-003" in failures(run)
+
+
+async def test_catches_a_second_barrier_call_answered_without_busy(tmp_path):
+    from .conftest import featured
+
+    server = await featured("lockstep", tmp_path / "audit")
+    world = server.world
+    original = world._rpc_world_tick
+
+    def replacing(c, rid, p, now):  # the new call silently takes the pending one's place
+        c.session.tick_request = None
+        original(c, rid, p, now)
+
+    world._rpc_world_tick = replacing  # type: ignore[method-assign]
+    try:
+        run = await run_world(server.url, sim_fixture(), only=["barrier-calls"])
+    finally:
+        await server.stop()
+    assert "AWP-TIM-014" in failures(run)
+
+
+async def test_catches_a_multi_bind_submission_without_embodiment_id(tmp_path):
+    from .conftest import featured
+
+    server = await featured("streaming", tmp_path / "audit")
+    world = server.world
+    original = world._embodiment_of
+
+    def defaulting(s, p):
+        return original(s, {"embodiment_id": s.embodiments[0], **p})
+
+    world._embodiment_of = defaulting  # type: ignore[method-assign]
+    try:
+        run = await run_world(server.url, sim_fixture(), only=["multi-bind"])
+    finally:
+        await server.stop()
+    assert "AWP-EMB-005" in failures(run)
+
+
+async def test_catches_an_event_that_does_not_name_its_embodiment(tmp_path):
+    from .conftest import featured
+
+    server = await featured("streaming", tmp_path / "audit")
+    world = server.world
+    original = world._event
+
+    def anonymous(s, event, now, detail=None):
+        original(s, event, now, {k: v for k, v in (detail or {}).items() if k != "embodiment"})
+
+    world._event = anonymous  # type: ignore[method-assign]
+    try:
+        run = await run_world(server.url, sim_fixture(), only=["transfer"])
+    finally:
+        await server.stop()
+    assert "AWP-EVT-004" in failures(run)

@@ -71,7 +71,11 @@ class StreamLink:
                     tr.bad("AWP-DAT-006", f"undecodable stream frame: {err}")
                     continue
                 tr.ok("AWP-TRN-013")
-                tr.ok("AWP-DAT-006")
+                tr.expect(
+                    "AWP-DAT-006",
+                    not frame.reserved,
+                    f"reserved extension types {[f'{k:#04x}' for k in frame.reserved]}",
+                )
                 tr.expect("AWP-DAT-005", not frame.raw_flags & 0xF0, "reserved flag bits set")
                 self.frames.append((now_ns(), frame))
                 tr.on_frame(frame.as_inline(), binding="ws")
