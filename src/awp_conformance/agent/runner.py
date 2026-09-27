@@ -88,15 +88,30 @@ async def _launch(command: list[str], h: Harness) -> asyncio.subprocess.Process:
 
 
 async def _stop(proc: asyncio.subprocess.Process) -> None:
-    if proc.returncode is None:
+    if proc.returncode is not None:
+        return
+    if sys.platform == "win32":
+        # Windows has no process groups to signal; taskkill /T takes the agent's children too.
+        killer = await asyncio.create_subprocess_exec(
+            "taskkill",
+            "/F",
+            "/T",
+            "/PID",
+            str(proc.pid),
+            stdout=asyncio.subprocess.DEVNULL,
+            stderr=asyncio.subprocess.DEVNULL,
+        )
+        await killer.wait()
+        await proc.wait()
+        return
+    with contextlib.suppress(ProcessLookupError):
+        os.killpg(proc.pid, signal.SIGTERM)
+    try:
+        await asyncio.wait_for(proc.wait(), 3)
+    except TimeoutError:
         with contextlib.suppress(ProcessLookupError):
-            os.killpg(proc.pid, signal.SIGTERM)
-        try:
-            await asyncio.wait_for(proc.wait(), 3)
-        except TimeoutError:
-            with contextlib.suppress(ProcessLookupError):
-                os.killpg(proc.pid, signal.SIGKILL)
-            await proc.wait()
+            os.killpg(proc.pid, signal.SIGKILL)
+        await proc.wait()
 
 
 async def run_episode(
