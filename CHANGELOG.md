@@ -1,5 +1,11 @@
 # Changelog
 
+## 0.1.0a8
+
+Targets specification revision `0.1-draft.10`.
+
+- No verdicts changed. `awp-conformance agent` runs on Windows: it stops the agent and its child processes with `taskkill` there.
+
 ## 0.1.0a7
 
 Targets specification revision `0.1-draft.10`.
