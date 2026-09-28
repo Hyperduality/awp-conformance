@@ -53,6 +53,6 @@ CI runs all of these. It also runs the suite against awp-sim in each configurati
 
 3. `release.yml` checks that the tag matches the version, then builds the package. It publishes through PyPI trusted publishing once someone approves the `pypi` environment.
    - A maintainer gives that approval. Agents never approve deployments, and never publish with a token.
-4. After the release, update the suite pin in the CI of awp-python, awp-sim, and awp-typescript.
+4. After the release, update the suite pin in the CI of awp-python, awp-sim, awp-typescript, and awp-demo.
    - Regenerate their committed reports with the new version.
    - Update the suite version on the docs site's registry and badges pages.
