@@ -114,13 +114,17 @@ def build(
 
 def write(report: dict[str, Any], out: Path, traces: dict[str, list[dict[str, Any]]]) -> None:
     out.mkdir(parents=True, exist_ok=True)
-    (out / "report.json").write_text(json.dumps(report, indent=2) + "\n")
+    (out / "report.json").write_text(
+        json.dumps(report, indent=2) + "\n", encoding="utf-8", newline="\n"
+    )
     trace_dir = out / "traces"
     trace_dir.mkdir(exist_ok=True)
     for name, lines in traces.items():
         safe = name.replace("/", "--")
         (trace_dir / f"{safe}.jsonl").write_text(
-            "".join(json.dumps(line, separators=(",", ":")) + "\n" for line in lines)
+            "".join(json.dumps(line, separators=(",", ":")) + "\n" for line in lines),
+            encoding="utf-8",
+            newline="\n",
         )
 
 

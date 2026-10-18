@@ -21,9 +21,11 @@ ROW = re.compile(r"^\| \[(AWP-[A-Z]+-\d{3})\]\(([^)]*)\) \| (MUST|SHOULD|MAY) \|
 
 
 def requirements() -> list[dict[str, str]]:
-    rows = yaml.safe_load((SPEC / "spec" / "requirements.yaml").read_text())["requirements"]
+    rows = yaml.safe_load((SPEC / "spec" / "requirements.yaml").read_text(encoding="utf-8"))[
+        "requirements"
+    ]
     pages: dict[str, tuple[str, str, str]] = {}
-    for line in (SPEC / "spec" / "requirements.mdx").read_text().splitlines():
+    for line in (SPEC / "spec" / "requirements.mdx").read_text(encoding="utf-8").splitlines():
         m = ROW.match(line)
         if m:
             pages[m.group(1)] = (m.group(3), m.group(2), m.group(4).strip())
@@ -40,12 +42,14 @@ def expected() -> dict[Path, str]:
     files: dict[Path, str] = {}
     schema_dir = SPEC / "schemas" / "v0.1"
     for src in sorted(schema_dir.rglob("*.schema.json")):
-        files[DEST / "schemas" / src.relative_to(schema_dir)] = src.read_text()
-    table = yaml.safe_load((SPEC / "spec" / "action-lifecycle.yaml").read_text())
+        files[DEST / "schemas" / src.relative_to(schema_dir)] = src.read_text(encoding="utf-8")
+    table = yaml.safe_load((SPEC / "spec" / "action-lifecycle.yaml").read_text(encoding="utf-8"))
     table.pop("pre_execution_cancel", None)  # YAML anchor holder, not part of the table
     files[DEST / "lifecycle.json"] = json.dumps(table, indent=2) + "\n"
     files[DEST / "requirements.json"] = json.dumps(requirements(), indent=1) + "\n"
-    files[DEST / "frames.json"] = (SPEC / "schemas" / "test-vectors" / "frames.json").read_text()
+    files[DEST / "frames.json"] = (SPEC / "schemas" / "test-vectors" / "frames.json").read_text(
+        encoding="utf-8"
+    )
     return files
 
 
@@ -54,7 +58,9 @@ def main() -> int:
         print("spec/ submodule missing; run `git submodule update --init`", file=sys.stderr)
         return 1
     want = expected()
-    have = {p: p.read_text() for p in DEST.rglob("*.json")} if DEST.exists() else {}
+    have = (
+        {p: p.read_bytes().decode("utf-8") for p in DEST.rglob("*.json")} if DEST.exists() else {}
+    )
     if "--check" in sys.argv:
         drift = sorted(
             str(p.relative_to(ROOT))
@@ -68,7 +74,7 @@ def main() -> int:
         p.unlink()
     for p, text in want.items():
         p.parent.mkdir(parents=True, exist_ok=True)
-        p.write_text(text)
+        p.write_text(text, encoding="utf-8", newline="\n")
     print(f"synced {len(want)} files into {DEST.relative_to(ROOT)}")
     return 0
 
