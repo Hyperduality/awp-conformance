@@ -1,5 +1,11 @@
 # Changelog
 
+## 0.1.0a9
+
+Targets specification revision `0.1-draft.11`.
+
+- AWP-GAM-001: the new `input-chunk` test runs on worlds that declare `input_chunk`. The type must be `extended`, offer `replace`, be in concurrency group `input`, and carry the normative params schema narrowed only by fixing `slot_ms` to a `const`, lowering `slots.maxItems`, restricting the key-name enum to a subset, or removing `mouse_dx`, `mouse_dy`, `scroll_steps`, `sticks`, or `triggers`. A world may close its objects with `additionalProperties: false` or `x-awp-closed`. AWP-GAM-002..004 take manual evidence.
+
 ## 0.1.0a8
 
 Targets specification revision `0.1-draft.10`.
