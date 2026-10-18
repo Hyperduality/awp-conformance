@@ -15,6 +15,7 @@ from . import (
     t_actions,
     t_basics,
     t_features,
+    t_game,
     t_lockstep,
     t_multi,
     t_operator,
@@ -36,6 +37,7 @@ MODULES = (
     t_operator,
     t_streams,
     t_features,
+    t_game,
 )
 
 log = logging.getLogger("awp_conformance")

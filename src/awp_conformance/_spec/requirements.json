@@ -963,6 +963,46 @@
   "text": "`e_stop_engaged`, `e_stop_released`, `envelope_violation`, `safe_state_entered`, `safe_state_exited`, and `embodiment_transferred` concern an\u2026"
  },
  {
+  "id": "AWP-GAM-001",
+  "side": "world",
+  "applies": "all",
+  "gate": "feature:input_chunk declared",
+  "test": "AWP-GAM-001",
+  "level": "MUST",
+  "page": "/spec/profiles/game",
+  "text": "Declaration. A world that declares `input_chunk` MUST declare it with `duration: \"extended\"`, `\"replace\"` among its preemption policies,\u2026"
+ },
+ {
+  "id": "AWP-GAM-002",
+  "side": "world",
+  "applies": "all",
+  "gate": "feature:input_chunk declared",
+  "test": "manual: a device-level trace from the world's input layer showing slot timing and key state for a submitted chunk",
+  "level": "MUST",
+  "page": "/spec/profiles/game",
+  "text": "Slots. The world MUST execute each slot as the device state held for its duration: a listed key not held in the previous slot is pressed at the\u2026"
+ },
+ {
+  "id": "AWP-GAM-003",
+  "side": "world",
+  "applies": "all",
+  "gate": "feature:input_chunk declared",
+  "test": "manual: a device-level trace showing a held key kept down across a replace",
+  "level": "MUST",
+  "page": "/spec/profiles/game",
+  "text": "Replacement. A `replace` submission takes over at the running chunk's next slot boundary, which is the safe transition of AWP-PRE-003. A key held\u2026"
+ },
+ {
+  "id": "AWP-GAM-004",
+  "side": "world",
+  "applies": "all",
+  "gate": "feature:input_chunk declared",
+  "test": "manual: a device-level trace showing release on cancel and on safe-state entry",
+  "level": "MUST",
+  "page": "/spec/profiles/game",
+  "text": "Release. When an `input_chunk` leaves `executing` with no replacement taking over, including on safe-state entry and e-stop, the world MUST\u2026"
+ },
+ {
   "id": "AWP-GUI-001",
   "side": "world",
   "applies": "all",

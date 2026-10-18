@@ -44,6 +44,7 @@ class Scope:
             "multiple sessions": "multiple sessions" in self.facts,
             "stream endpoints offered": "stream endpoints offered" in self.facts,
             "tick_authority barrier": m.get("tick_authority") == "barrier",
+            "input_chunk declared": any(d.get("type") == "input_chunk" for d in decls),
         }
         return known.get(condition)
 
