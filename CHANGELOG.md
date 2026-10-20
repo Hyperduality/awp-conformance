@@ -1,5 +1,12 @@
 # Changelog
 
+## 0.1.0a10
+
+Targets specification revision `0.1-draft.12`. Draft 12 changes no wire format and no automated test: snapshot/restore becomes optional in the game profile, and AWP-GAM-002, still manual evidence, starts a chunk at the world's first input update after admission.
+
+- AWP-SAF-003: the `watchdog` test now times from the submission, the last message the agent originated, rather than from when the action began executing. A world that starts the action at its next input update no longer looks up to a tick early.
+- Synced spec files and written reports are UTF-8 with LF line endings on every platform, Windows included.
+
 ## 0.1.0a9
 
 Targets specification revision `0.1-draft.11`.
