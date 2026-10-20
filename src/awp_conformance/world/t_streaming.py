@@ -147,8 +147,10 @@ async def watchdog(ctx: WorldContext) -> None:
         window >= watchdog_ms,
         f"reconnect_window_ms {window} is shorter than watchdog_ms {watchdog_ms}",
     )
+    # The submission is the last message this agent originates. A world may begin executing it a
+    # little later (at its next input update, say), so the watchdog runs from when it was sent.
+    last_sent = now_ns()
     action_id = await ctx.running(link)
-    last_sent = now_ns()  # the submission was the last message this agent originated
     entered = await link.wait_note(
         lambda m: m.get("method") == "world.event" and m["params"]["event"] == "safe_state_entered",
         watchdog_ms / 1000 + 3,
