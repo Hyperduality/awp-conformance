@@ -47,6 +47,8 @@ async def estop(ctx: WorldContext) -> None:
                 f"an e-stop during the abort ended {s.get('state')}({s.get('reason')})",
             )
         if queued is not None:
+            # A world may report the running action before the queued one; wait for both.
+            await link.wait_for(lambda: ctx.state(link, queued) in TERMINAL, 2.0)
             q = ctx.status(link, queued)
             ctx.check(
                 "AWP-EVT-002",
